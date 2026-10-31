@@ -1,0 +1,6 @@
+{
+  "name": "Forge & Grimoire - D&D 5e Character Builder",
+  "description": "Comprehensive D&D 5e character builder with 5e.tools data integration, interactive digital sheet, dice rolling, and fillable PDF character sheet export.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

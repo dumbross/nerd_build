@@ -1,0 +1,107 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { Character } from '../types/character';
+import { SAMPLE_CHARACTERS } from '../data/sampleCharacters';
+
+const STORAGE_KEY = 'forge_grimoire_characters_v1';
+const ACTIVE_CHAR_KEY = 'forge_grimoire_active_char_id';
+
+export function loadSavedCharacters(): Character[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      saveCharacters(SAMPLE_CHARACTERS);
+      return SAMPLE_CHARACTERS;
+    }
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      saveCharacters(SAMPLE_CHARACTERS);
+      return SAMPLE_CHARACTERS;
+    }
+    // Automatically merge any newly added sample characters (like Fizwick Sparkfuse)
+    let needsSave = false;
+    for (const sample of SAMPLE_CHARACTERS) {
+      if (!parsed.some((c: any) => c.id === sample.id)) {
+        parsed.push(sample);
+        needsSave = true;
+      }
+    }
+    if (needsSave) {
+      saveCharacters(parsed);
+    }
+    return parsed;
+  } catch (e) {
+    console.error('Failed to load saved characters', e);
+    return SAMPLE_CHARACTERS;
+  }
+}
+
+export function saveCharacters(chars: Character[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(chars));
+  } catch (e) {
+    console.error('Failed to save characters', e);
+  }
+}
+
+export function getActiveCharacterId(): string {
+  return localStorage.getItem(ACTIVE_CHAR_KEY) || SAMPLE_CHARACTERS[0].id;
+}
+
+export function setActiveCharacterId(id: string): void {
+  localStorage.setItem(ACTIVE_CHAR_KEY, id);
+}
+
+export function createBlankCharacter(): Character {
+  const id = `char_${Date.now()}`;
+  return {
+    id,
+    name: 'New Hero',
+    playerName: '',
+    level: 1,
+    experience: 0,
+    alignment: 'Neutral Good',
+    race: 'Human',
+    className: 'Fighter',
+    background: 'Folk Hero',
+    abilityMode: 'pointbuy',
+    baseAbilities: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+    customAbilityBonuses: { str: 1, dex: 1, con: 1, int: 1, wis: 1, cha: 1 },
+    savingThrowProficiencies: ['str', 'con'],
+    skillProficiencies: ['athletics', 'survival'],
+    skillExpertise: [],
+    armorProficiencies: ['All armor', 'Shields'],
+    weaponProficiencies: ['Simple weapons', 'Martial weapons'],
+    toolProficiencies: [],
+    languages: ['Common'],
+    hpMax: 12,
+    hpCurrent: 12,
+    tempHp: 0,
+    hitDiceTotal: 1,
+    hitDiceSpent: 0,
+    inspiration: false,
+    deathSaves: { successes: 0, failures: 0 },
+    speed: 30,
+    initiativeBonus: 0,
+    weapons: [],
+    armor: [],
+    inventory: [],
+    currency: { cp: 0, sp: 0, ep: 0, gp: 15, pp: 0 },
+    spellSlotsTotal: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    spellSlotsExpended: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    spells: [],
+    features: [],
+    personalityTraits: '',
+    ideals: '',
+    bonds: '',
+    flaws: '',
+    backstory: '',
+    appearance: '',
+    alliesAndOrgs: '',
+    additionalNotes: '',
+    updatedAt: new Date().toISOString(),
+  };
+}
