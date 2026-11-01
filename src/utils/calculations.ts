@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AbilityName, AbilityScores, Character, SkillName, SKILLS_LIST } from '../types/character';
+import { AbilityName, AbilityScores, Character, SkillName, SKILLS_LIST, Spell } from '../types/character';
+import { FIVE_TOOLS_SPELLS } from '../data/spells';
 
 export function getAbilityModifier(score: number): number {
   return Math.floor((score - 10) / 2);
@@ -326,5 +327,28 @@ export function isSpellEligible(
   }
 
   return { eligible: true };
+}
+
+/**
+ * Provides authentic 5e starting Cantrips (level 0) and 1st-level spells tailored for each spellcaster class.
+ */
+export function getStartingSpellsForClass(className: string): Spell[] {
+  const norm = className.toLowerCase().trim();
+  const starters: Record<string, string[]> = {
+    wizard: ['Fire Bolt', 'Mage Hand', 'Minor Illusion', 'Magic Missile', 'Shield', 'Mage Armor', 'Detect Magic'],
+    sorcerer: ['Fire Bolt', 'Ray of Frost', 'Prestidigitation', 'Shocking Grasp', 'Burning Hands', 'Shield'],
+    cleric: ['Sacred Flame', 'Guidance', 'Thaumaturgy', 'Bless', 'Cure Wounds', 'Healing Word', 'Guiding Bolt'],
+    druid: ['Druidcraft', 'Guidance', 'Thorn Whip', 'Cure Wounds', 'Healing Word', 'Faerie Fire'],
+    bard: ['Vicious Mockery', 'Minor Illusion', 'Mage Hand', 'Dissonant Whispers', 'Healing Word', 'Cure Wounds'],
+    warlock: ['Eldritch Blast', 'Minor Illusion', 'Hex', 'Burning Hands'],
+    artificer: ['Fire Bolt', 'Guidance', 'Cure Wounds', 'Absorb Elements', 'Faerie Fire'],
+    paladin: ['Bless', 'Cure Wounds'],
+    ranger: ["Hunter's Mark", 'Cure Wounds'],
+  };
+
+  const spellNames = starters[norm] || [];
+  return FIVE_TOOLS_SPELLS
+    .filter((sp) => spellNames.some((n) => n.toLowerCase() === sp.name.toLowerCase()))
+    .map((sp) => ({ ...sp, prepared: true }));
 }
 

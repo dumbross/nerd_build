@@ -13,6 +13,8 @@ import {
   formatModifier,
   getAbilityScoresTotal,
   getProficiencyBonus,
+  getStartingSpellsForClass,
+  isSpellcastingClass,
 } from '../../utils/calculations';
 
 interface SpellsTabProps {
@@ -207,15 +209,32 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
       {/* Spells List */}
       <div className="space-y-3">
         {filteredSpells.length === 0 ? (
-          <div className="p-8 rounded-xl bg-slate-900/60 border border-slate-800 text-center space-y-2">
+          <div className="p-8 rounded-xl bg-slate-900/60 border border-slate-800 text-center space-y-3">
             <BookOpen className="w-6 h-6 text-slate-500 mx-auto" />
-            <div className="text-xs text-slate-400">No spells found in this category.</div>
-            <button
-              onClick={onOpenCompendium}
-              className="text-xs text-amber-400 font-semibold hover:underline"
-            >
-              Browse 5e.tools Compendium
-            </button>
+            <div className="text-xs text-slate-400">No spells found in this grimoire category.</div>
+            <div className="flex items-center justify-center gap-3 pt-1 flex-wrap">
+              <button
+                onClick={onOpenCompendium}
+                className="text-xs text-amber-400 font-semibold hover:underline cursor-pointer"
+              >
+                Browse 5e.tools Compendium
+              </button>
+              {isSpellcastingClass(character.className) && (
+                <button
+                  onClick={() => {
+                    const starters = getStartingSpellsForClass(character.className);
+                    onUpdateCharacter({
+                      ...character,
+                      spells: starters,
+                      updatedAt: new Date().toISOString(),
+                    });
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs cursor-pointer transition-colors"
+                >
+                  Auto-Fill 5e Starter Spells
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           filteredSpells.map((spell) => {

@@ -6,6 +6,7 @@
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { Character, SKILLS_LIST } from '../types/character';
 import { cleanForPdf } from './5eParser';
+import { FIVE_TOOLS_BACKGROUNDS } from '../data/backgrounds';
 import {
   calculateArmorClass,
   calculatePassivePerception,
@@ -14,9 +15,12 @@ import {
   formatModifier,
   getAbilityModifier,
   getAbilityScoresTotal,
+  getClassSpellSlots,
   getProficiencyBonus,
   getSavingThrowModifier,
   getSkillModifier,
+  getStartingSpellsForClass,
+  isSpellcastingClass,
 } from './calculations';
 
 export async function generateFillablePdf(character: Character): Promise<Uint8Array> {
@@ -54,6 +58,25 @@ export async function generateFillablePdf(character: Character): Promise<Uint8Ar
   const spellScore = abilities[spellAbility];
   const spellSaveDC = calculateSpellSaveDC(spellScore, profBonus);
   const spellAttackBonus = calculateSpellAttackModifier(spellScore, profBonus);
+  const isCaster = isSpellcastingClass(character.className) || !!character.spellcastingAbility;
+
+  // Determine effective spells (if empty for a caster, populate starting 5e spells)
+  const effectiveSpells =
+    character.spells && character.spells.length > 0
+      ? character.spells
+      : isCaster
+      ? getStartingSpellsForClass(character.className)
+      : [];
+
+  const spellsByLevel = effectiveSpells.reduce<Record<number, typeof effectiveSpells>>((acc, s) => {
+    const lvlNum = Number(s.level) || 0;
+    acc[lvlNum] = acc[lvlNum] || [];
+    acc[lvlNum].push(s);
+    return acc;
+  }, {});
+
+  const cantripList = spellsByLevel[0] || [];
+  const level1List = spellsByLevel[1] || [];
 
   // ==========================================
   // PAGE 1: Core Sheet
@@ -115,20 +138,18 @@ export async function generateFillablePdf(character: Character): Promise<Uint8Ar
     h: number,
     isMultiline: boolean = false
   ) => {
-    page.drawText(label.toUpperCase(), {
-      x,
-      y: y + h + 2,
-      size: 6.5,
-      font: fontBold,
-      color: darkSlate,
-    });
+    if (label) {
+      page.drawText(label.toUpperCase(), {
+        x,
+        y: y + h + 2,
+        size: 6.5,
+        font: fontBold,
+        color: darkSlate,
+      });
+    }
 
     try {
       const field = form.createTextField(fieldName);
-      field.setText(value || '');
-      if (isMultiline) {
-        field.enableMultiline();
-      }
       field.addToPage(page, {
         x,
         y,
@@ -140,6 +161,13 @@ export async function generateFillablePdf(character: Character): Promise<Uint8Ar
         textColor: black,
         font: fontRegular,
       });
+      if (isMultiline) {
+        field.enableMultiline();
+        field.setFontSize(8);
+      } else {
+        field.setFontSize(9);
+      }
+      field.setText(cleanForPdf(value) || '');
       return field;
     } catch {
       return null;
@@ -342,24 +370,56 @@ export async function generateFillablePdf(character: Character): Promise<Uint8Ar
   page1.drawText('ATK BONUS', { x: 290, y: 434, size: 6, font: fontBold, color: darkSlate });
   page1.drawText('DAMAGE/TYPE', { x: 334, y: 434, size: 6, font: fontBold, color: darkSlate });
 
+  // Weapons & combat cantrips list
   const equippedWeapons = (character.weapons || []).filter((w) => w.equipped);
-  for (let i = 0; i < 3; i++) {
-    const w = equippedWeapons[i];
-    const yOff = 414 - i * 22;
+  const weaponAttacks: { name: string; atk: string; dmg: string }[] = equippedWeapons.map((w) => {
     const isFinesse = w?.properties?.some((p) => p.toLowerCase().includes('finesse'));
     const isRanged = w?.category?.includes('Ranged');
     const abilityForAtk = isRanged || (isFinesse && abilities.dex > abilities.str) ? abilities.dex : abilities.str;
-    const atkBonus = w ? formatModifier(getAbilityModifier(abilityForAtk) + profBonus) : '';
-    const dmgStr = w ? `${w.damage} ${w.damageType}` : '';
+    const atkBonus = formatModifier(getAbilityModifier(abilityForAtk) + profBonus);
+    const dmgStr = `${w.damage} ${w.damageType}`;
+    return { name: w.name, atk: atkBonus, dmg: dmgStr };
+  });
 
+  // If fewer than 3 weapons, include combat cantrips into the weapon attack rows!
+  if (weaponAttacks.length < 3 && cantripList.length > 0) {
+    const combatCantrips = cantripList.filter(
+      (c) =>
+        c.damage ||
+        c.damageType ||
+        c.saveAbility ||
+        ['Fire Bolt', 'Eldritch Blast', 'Ray of Frost', 'Sacred Flame', 'Toll the Dead', 'Shocking Grasp', 'Vicious Mockery'].includes(c.name)
+    );
+    for (const c of combatCantrips) {
+      if (weaponAttacks.length >= 3) break;
+      const atkStr = c.saveAbility
+        ? `DC ${spellSaveDC} ${c.saveAbility.toUpperCase()}`
+        : formatModifier(spellAttackBonus);
+      const dmgStr = c.damage
+        ? `${c.damage} ${c.damageType || ''}`
+        : `${c.damageType || 'Special'}`;
+      weaponAttacks.push({ name: c.name, atk: atkStr, dmg: dmgStr });
+    }
+  }
+
+  for (let i = 0; i < 3; i++) {
+    const w = weaponAttacks[i];
+    const yOff = 414 - i * 22;
     addField(page1, `WeaponName_${i + 1}`, '', w?.name || '', 218, yOff, 68, 16);
-    addField(page1, `WeaponAtk_${i + 1}`, '', atkBonus, 290, yOff, 38, 16);
-    addField(page1, `WeaponDmg_${i + 1}`, '', dmgStr, 332, yOff, 54, 16);
+    addField(page1, `WeaponAtk_${i + 1}`, '', w?.atk || '', 290, yOff, 38, 16);
+    addField(page1, `WeaponDmg_${i + 1}`, '', w?.dmg || '', 332, yOff, 54, 16);
   }
 
   // Attacks Notes / Spells / Ammo description
+  const cantripsSummary =
+    cantripList.length > 0 ? `CANTRIPS: ${cantripList.map((c) => c.name).join(', ')}` : '';
+  const lvl1Summary =
+    level1List.length > 0 ? `1ST LEVEL SPELLS: ${level1List.map((s) => s.name).join(', ')}` : '';
+
   const attackNotes = [
-    character.spellcastingAbility ? `Spell Save DC: ${spellSaveDC} | Spell Attack: ${formatModifier(spellAttackBonus)}` : '',
+    isCaster ? `Spell Save DC: ${spellSaveDC} | Spell Attack: ${formatModifier(spellAttackBonus)}` : '',
+    cantripsSummary,
+    lvl1Summary,
     ...equippedWeapons.map((w) => `${w.name}: ${w.properties?.join(', ') || ''}`),
   ]
     .filter(Boolean)
@@ -390,14 +450,24 @@ export async function generateFillablePdf(character: Character): Promise<Uint8Ar
   // ------------------------------------------
   // Right Column: Personality & Features
   // ------------------------------------------
+  const bgObj =
+    FIVE_TOOLS_BACKGROUNDS.find(
+      (b) => b.name.toLowerCase() === (character.background || '').toLowerCase()
+    ) || FIVE_TOOLS_BACKGROUNDS[2]; // Fallback to Folk Hero
+
+  const pTraits = character.personalityTraits?.trim() || bgObj?.suggestedTraits?.[0] || '';
+  const pIdeals = character.ideals?.trim() || bgObj?.suggestedIdeals?.[0] || '';
+  const pBonds = character.bonds?.trim() || bgObj?.suggestedBonds?.[0] || '';
+  const pFlaws = character.flaws?.trim() || bgObj?.suggestedFlaws?.[0] || '';
+
   // Personality Traits
-  addField(page1, 'PersonalityTraits', 'Personality Traits', character.personalityTraits || '', 400, 596, 188, 56, true);
+  addField(page1, 'PersonalityTraits', 'Personality Traits', pTraits, 400, 596, 188, 56, true);
   // Ideals
-  addField(page1, 'Ideals', 'Ideals', character.ideals || '', 400, 520, 188, 48, true);
+  addField(page1, 'Ideals', 'Ideals', pIdeals, 400, 520, 188, 48, true);
   // Bonds
-  addField(page1, 'Bonds', 'Bonds', character.bonds || '', 400, 444, 188, 48, true);
+  addField(page1, 'Bonds', 'Bonds', pBonds, 400, 444, 188, 48, true);
   // Flaws
-  addField(page1, 'Flaws', 'Flaws', character.flaws || '', 400, 368, 188, 48, true);
+  addField(page1, 'Flaws', 'Flaws', pFlaws, 400, 368, 188, 48, true);
 
   // Features & Traits (Class features, Racial traits, Feats)
   const featuresText = (character.features || [])
@@ -423,13 +493,6 @@ export async function generateFillablePdf(character: Character): Promise<Uint8Ar
   addField(page2, 'SpellSaveDC', 'Spell Save DC', `${spellSaveDC}`, 442, 725, 66, 18);
   addField(page2, 'SpellAttackBonus', 'Spell Attack Bonus', formatModifier(spellAttackBonus), 516, 725, 66, 18);
 
-  // 3 Columns of Spells (Cantrips & 1st-2nd in Col 1, 3rd-5th in Col 2, 6th-9th in Col 3)
-  const spellsByLevel = (character.spells || []).reduce<Record<number, typeof character.spells>>((acc, s) => {
-    acc[s.level] = acc[s.level] || [];
-    acc[s.level].push(s);
-    return acc;
-  }, {});
-
   const renderSpellLevelBox = (
     lvl: number,
     label: string,
@@ -442,7 +505,8 @@ export async function generateFillablePdf(character: Character): Promise<Uint8Ar
     page2.drawText(label.toUpperCase(), { x: x + 8, y: y + h - 14, size: 7.5, font: fontBold, color: darkSlate });
 
     if (lvl > 0) {
-      const totalSlots = character.spellSlotsTotal?.[lvl - 1] || 0;
+      const calculatedSlots = getClassSpellSlots(character.className, character.level);
+      const totalSlots = character.spellSlotsTotal?.[lvl - 1] ?? calculatedSlots[lvl - 1] ?? 0;
       const spentSlots = character.spellSlotsExpended?.[lvl - 1] || 0;
       addField(page2, `SpellSlotsTotal_${lvl}`, 'Slots Total', `${totalSlots}`, x + w - 74, y + h - 22, 32, 12);
       addField(page2, `SpellSlotsSpent_${lvl}`, 'Expended', `${spentSlots}`, x + w - 38, y + h - 22, 32, 12);
@@ -450,7 +514,10 @@ export async function generateFillablePdf(character: Character): Promise<Uint8Ar
 
     const list = spellsByLevel[lvl] || [];
     const textLines = list.map((sp) => `${sp.name} [${sp.school}, ${sp.castingTime}]`).join('\n');
-    addField(page2, `SpellsLevel_${lvl}`, '', textLines, x + 6, y + 8, w - 12, h - 36, true);
+    
+    // For level 0, name standard field "Cantrips". For level 1, name "SpellsLevel_1".
+    const fieldName = lvl === 0 ? 'Cantrips' : `SpellsLevel_${lvl}`;
+    addField(page2, fieldName, '', textLines, x + 6, y + 8, w - 12, h - 36, true);
   };
 
   // Column 1: Cantrips (Lvl 0), 1st Level, 2nd Level
@@ -502,6 +569,13 @@ export async function generateFillablePdf(character: Character): Promise<Uint8Ar
 
   // Treasure & Valuables
   addField(page3, 'Treasure', 'Treasure & Heirlooms', 'Family signet ring, curious brass key with archaic engravings, silver locket.', 24, 24, 564, 168, true);
+
+  // Pre-generate appearance streams so form fields display filled in all PDF readers
+  try {
+    form.updateFieldAppearances(fontRegular);
+  } catch (err) {
+    console.warn('Could not update field appearances', err);
+  }
 
   const pdfBytes = await pdfDoc.save();
   return pdfBytes;

@@ -102,6 +102,10 @@ export interface FiveToolsBackground {
     name: string;
     entries: FiveToolsEntry[];
   };
+  suggestedTraits?: string[];
+  suggestedIdeals?: string[];
+  suggestedBonds?: string[];
+  suggestedFlaws?: string[];
   entries?: FiveToolsEntry[];
 }
 

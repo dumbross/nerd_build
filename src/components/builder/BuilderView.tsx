@@ -43,6 +43,7 @@ import {
   isSpellcastingClass,
   isSpellEligible,
   getProficiencyBonus,
+  getStartingSpellsForClass,
   POINT_BUY_COST,
 } from '../../utils/calculations';
 import { clean5eToolsText, render5eToolsEntries } from '../../utils/5eParser';
@@ -202,6 +203,13 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
     const spellSlots = getClassSpellSlots(c.name, character.level);
     const maxSlot = getMaxSpellLevel(c.name, character.level);
     const filteredSpells = (character.spells || []).filter((s) => s.level <= maxSlot);
+    const isCaster = isSpellcastingClass(c.name) || !!c.spellcastingAbility;
+    const finalSpells =
+      filteredSpells.length > 0
+        ? filteredSpells
+        : isCaster
+        ? getStartingSpellsForClass(c.name)
+        : [];
 
     update({
       className: c.name,
@@ -211,7 +219,7 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
       weaponProficiencies: c.weaponProficiencies || [],
       spellcastingAbility: c.spellcastingAbility,
       spellSlotsTotal: spellSlots,
-      spells: filteredSpells,
+      spells: finalSpells,
       hpMax: Math.max(1, baseHp),
       hpCurrent: Math.max(1, baseHp),
       features: [
@@ -241,6 +249,11 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
         ]
       : [];
 
+    const bgTrait = bg.suggestedTraits?.[0] || '';
+    const bgIdeal = bg.suggestedIdeals?.[0] || '';
+    const bgBond = bg.suggestedBonds?.[0] || '';
+    const bgFlaw = bg.suggestedFlaws?.[0] || '';
+
     update({
       background: bg.name,
       skillProficiencies: Array.from(new Set([...existingSkills, ...bgSkills])),
@@ -248,6 +261,10 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
         ...character.features.filter((f) => f.source !== 'Background'),
         ...bgFeature,
       ],
+      personalityTraits: character.personalityTraits?.trim() ? character.personalityTraits : bgTrait,
+      ideals: character.ideals?.trim() ? character.ideals : bgIdeal,
+      bonds: character.bonds?.trim() ? character.bonds : bgBond,
+      flaws: character.flaws?.trim() ? character.flaws : bgFlaw,
     });
   };
 
@@ -703,48 +720,211 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
               </div>
             </div>
 
+            {/* Personality Toolbar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-slate-950/70 border border-slate-800 rounded-xl">
+              <div>
+                <span className="text-xs font-bold text-amber-200">5e.tools Background Identity & Roleplay</span>
+                <p className="text-[11px] text-slate-400">
+                  Populate authentic traits, ideals, bonds, and flaws from the {selectedBgObj.name} background.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const traits = selectedBgObj.suggestedTraits || [];
+                    const ideals = selectedBgObj.suggestedIdeals || [];
+                    const bonds = selectedBgObj.suggestedBonds || [];
+                    const flaws = selectedBgObj.suggestedFlaws || [];
+                    update({
+                      personalityTraits: traits[0] || character.personalityTraits,
+                      ideals: ideals[0] || character.ideals,
+                      bonds: bonds[0] || character.bonds,
+                      flaws: flaws[0] || character.flaws,
+                    });
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-colors cursor-pointer"
+                >
+                  Auto-Fill 5e Defaults
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const traits = selectedBgObj.suggestedTraits || [];
+                    const ideals = selectedBgObj.suggestedIdeals || [];
+                    const bonds = selectedBgObj.suggestedBonds || [];
+                    const flaws = selectedBgObj.suggestedFlaws || [];
+                    const rTrait = traits[Math.floor(Math.random() * traits.length)] || character.personalityTraits;
+                    const rIdeal = ideals[Math.floor(Math.random() * ideals.length)] || character.ideals;
+                    const rBond = bonds[Math.floor(Math.random() * bonds.length)] || character.bonds;
+                    const rFlaw = flaws[Math.floor(Math.random() * flaws.length)] || character.flaws;
+                    update({
+                      personalityTraits: rTrait,
+                      ideals: rIdeal,
+                      bonds: rBond,
+                      flaws: rFlaw,
+                    });
+                  }}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs border border-slate-700 transition-colors cursor-pointer"
+                >
+                  <Dices className="w-3.5 h-3.5" />
+                  <span>Roll 5e Tables</span>
+                </button>
+              </div>
+            </div>
+
             {/* Personality Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-slate-400 block mb-1">
-                  Personality Traits
-                </label>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-400 block">
+                    Personality Traits
+                  </label>
+                  {selectedBgObj.suggestedTraits && (
+                    <span className="text-[10px] text-amber-400 font-mono">
+                      {selectedBgObj.name} d8 table
+                    </span>
+                  )}
+                </div>
                 <textarea
                   value={character.personalityTraits}
                   onChange={(e) => update({ personalityTraits: e.target.value })}
                   placeholder="Quirks, habits, demeanor..."
                   className="w-full h-20 p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-amber-500/60 resize-none"
                 />
+                {selectedBgObj.suggestedTraits && selectedBgObj.suggestedTraits.length > 0 && (
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                    <span className="text-[10px] text-slate-500 shrink-0">Quick pick:</span>
+                    {selectedBgObj.suggestedTraits.map((t, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => update({ personalityTraits: t })}
+                        className={`text-[10px] px-2 py-0.5 rounded border truncate max-w-[180px] shrink-0 transition-colors ${
+                          character.personalityTraits === t
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                        }`}
+                        title={t}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-slate-400 block mb-1">Ideals</label>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-400 block">Ideals</label>
+                  {selectedBgObj.suggestedIdeals && (
+                    <span className="text-[10px] text-amber-400 font-mono">
+                      {selectedBgObj.name} d6 table
+                    </span>
+                  )}
+                </div>
                 <textarea
                   value={character.ideals}
                   onChange={(e) => update({ ideals: e.target.value })}
                   placeholder="Guiding principles, morals, beliefs..."
                   className="w-full h-20 p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-amber-500/60 resize-none"
                 />
+                {selectedBgObj.suggestedIdeals && selectedBgObj.suggestedIdeals.length > 0 && (
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                    <span className="text-[10px] text-slate-500 shrink-0">Quick pick:</span>
+                    {selectedBgObj.suggestedIdeals.map((idVal, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => update({ ideals: idVal })}
+                        className={`text-[10px] px-2 py-0.5 rounded border truncate max-w-[180px] shrink-0 transition-colors ${
+                          character.ideals === idVal
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                        }`}
+                        title={idVal}
+                      >
+                        {idVal}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-slate-400 block mb-1">Bonds</label>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-400 block">Bonds</label>
+                  {selectedBgObj.suggestedBonds && (
+                    <span className="text-[10px] text-amber-400 font-mono">
+                      {selectedBgObj.name} d6 table
+                    </span>
+                  )}
+                </div>
                 <textarea
                   value={character.bonds}
                   onChange={(e) => update({ bonds: e.target.value })}
                   placeholder="People, places, heirlooms you would die for..."
                   className="w-full h-20 p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-amber-500/60 resize-none"
                 />
+                {selectedBgObj.suggestedBonds && selectedBgObj.suggestedBonds.length > 0 && (
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                    <span className="text-[10px] text-slate-500 shrink-0">Quick pick:</span>
+                    {selectedBgObj.suggestedBonds.map((bVal, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => update({ bonds: bVal })}
+                        className={`text-[10px] px-2 py-0.5 rounded border truncate max-w-[180px] shrink-0 transition-colors ${
+                          character.bonds === bVal
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                        }`}
+                        title={bVal}
+                      >
+                        {bVal}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-slate-400 block mb-1">Flaws</label>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-400 block">Flaws</label>
+                  {selectedBgObj.suggestedFlaws && (
+                    <span className="text-[10px] text-amber-400 font-mono">
+                      {selectedBgObj.name} d6 table
+                    </span>
+                  )}
+                </div>
                 <textarea
                   value={character.flaws}
                   onChange={(e) => update({ flaws: e.target.value })}
                   placeholder="Weaknesses, vices, blind spots..."
                   className="w-full h-20 p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-amber-500/60 resize-none"
                 />
+                {selectedBgObj.suggestedFlaws && selectedBgObj.suggestedFlaws.length > 0 && (
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                    <span className="text-[10px] text-slate-500 shrink-0">Quick pick:</span>
+                    {selectedBgObj.suggestedFlaws.map((fVal, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => update({ flaws: fVal })}
+                        className={`text-[10px] px-2 py-0.5 rounded border truncate max-w-[180px] shrink-0 transition-colors ${
+                          character.flaws === fVal
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                        }`}
+                        title={fVal}
+                      >
+                        {fVal}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1280,6 +1460,24 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
                         {slots.slice(0, maxSpellLevel).map((s, i) => `${i + 1}st:${s}`).join(', ')}
                       </span>
                     </div>
+                  )}
+
+                  {isCaster && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const starters = getStartingSpellsForClass(character.className);
+                        update({
+                          spells: starters,
+                        });
+                        setSpellNotice(`Populated authentic 5e starting Cantrips & 1st-level spells for ${character.className}!`);
+                        setTimeout(() => setSpellNotice(null), 3500);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-sm transition-all cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Auto-Fill Starter Spells</span>
+                    </button>
                   )}
                 </div>
               </div>
