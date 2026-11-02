@@ -26,6 +26,9 @@ import {
   Footprints,
   Eye,
   RotateCcw,
+  ChevronDown,
+  ChevronUp,
+  BookOpen,
 } from 'lucide-react';
 import { Character, AbilityScores, WeaponItem, ArmorItem, GearItem, Spell, AbilityName } from '../../types/character';
 import { FIVE_TOOLS_RACES } from '../../data/races';
@@ -48,6 +51,7 @@ import {
   getProficiencyBonus,
   getStartingSpellsForClass,
   getOptimalArmoryForClass,
+  getClassSubclassLevel,
   POINT_BUY_COST,
 } from '../../utils/calculations';
 import { clean5eToolsText, render5eToolsEntries } from '../../utils/5eParser';
@@ -103,6 +107,40 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
   const [spellLevelFilter, setSpellLevelFilter] = useState<string>('eligible');
   const [filterClassOnly, setFilterClassOnly] = useState<boolean>(true);
   const [raceSearch, setRaceSearch] = useState('');
+  const [expandedBgOptions, setExpandedBgOptions] = useState<{
+    traits: boolean;
+    ideals: boolean;
+    bonds: boolean;
+    flaws: boolean;
+  }>({
+    traits: false,
+    ideals: false,
+    bonds: false,
+    flaws: false,
+  });
+
+  const toggleBgOption = (key: 'traits' | 'ideals' | 'bonds' | 'flaws') => {
+    setExpandedBgOptions((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
+
+  const areAllBgOptionsExpanded =
+    expandedBgOptions.traits &&
+    expandedBgOptions.ideals &&
+    expandedBgOptions.bonds &&
+    expandedBgOptions.flaws;
+
+  const toggleAllBgOptions = () => {
+    const nextState = !areAllBgOptionsExpanded;
+    setExpandedBgOptions({
+      traits: nextState,
+      ideals: nextState,
+      bonds: nextState,
+      flaws: nextState,
+    });
+  };
 
   const selectedRaceObj =
     FIVE_TOOLS_RACES.find((r) => r.name.toLowerCase() === character.race.toLowerCase()) || FIVE_TOOLS_RACES[0];
@@ -207,7 +245,8 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
     const c = FIVE_TOOLS_CLASSES.find((cl) => cl.name === className);
     if (!c) return;
 
-    const defaultSub = c.subclasses?.[0]?.name;
+    const reqSubLvl = getClassSubclassLevel(c.name);
+    const defaultSub = character.level >= reqSubLvl ? c.subclasses?.[0]?.name : undefined;
     const conMod = getAbilityModifier(character.baseAbilities.con + (character.customAbilityBonuses?.con || 0));
     const baseHp = c.hd.faces + conMod + (character.level - 1) * (Math.floor(c.hd.faces / 2) + 1 + conMod);
 
@@ -251,6 +290,50 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
       hpCurrent: Math.max(1, baseHp),
       features: [
         ...character.features.filter((f) => f.source !== 'Class' && f.source !== 'Subclass'),
+        ...classFeatures,
+      ],
+    });
+  };
+
+  // Set Character Level (dictates unlocked subclass, spell slots, HP, and class features)
+  const handleSetLevel = (newLvl: number) => {
+    const clamped = Math.max(1, Math.min(20, newLvl));
+    const c = FIVE_TOOLS_CLASSES.find((cl) => cl.name === character.className) || selectedClassObj;
+    const conMod = getAbilityModifier(character.baseAbilities.con + (character.customAbilityBonuses?.con || 0));
+    const baseHp = c.hd.faces + conMod + (clamped - 1) * (Math.floor(c.hd.faces / 2) + 1 + conMod);
+
+    const classFeatures = (c.features || [])
+      .filter((f) => f.level <= clamped)
+      .map((f) => ({
+        id: `f_cls_${f.name.toLowerCase().replace(/\s+/g, '_')}`,
+        name: f.name,
+        source: 'Class' as const,
+        level: f.level,
+        description: render5eToolsEntries(f.entries),
+      }));
+
+    const newMaxSlot = getMaxSpellLevel(c.name, clamped);
+    const filteredSpells = (character.spells || []).filter((s) => s.level <= newMaxSlot);
+
+    // Subclass level restriction (e.g. Level 1 vs Level 3)
+    const reqSubLvl = getClassSubclassLevel(c.name);
+    let updatedSubclass = character.subclass;
+    if (clamped < reqSubLvl) {
+      updatedSubclass = undefined;
+    } else if (!updatedSubclass && c.subclasses && c.subclasses.length > 0) {
+      updatedSubclass = c.subclasses[0].name;
+    }
+
+    update({
+      level: clamped,
+      hitDiceTotal: clamped,
+      subclass: updatedSubclass,
+      spellSlotsTotal: getClassSpellSlots(c.name, clamped),
+      spells: filteredSpells,
+      hpMax: Math.max(1, baseHp),
+      hpCurrent: Math.max(1, baseHp),
+      features: [
+        ...character.features.filter((f) => f.source !== 'Class'),
         ...classFeatures,
       ],
     });
@@ -314,15 +397,34 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
       <div className="bg-white border border-[#E5DFD5] rounded-2xl p-5 sm:p-6 shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
           <div className="space-y-1.5 flex-1 min-w-0">
-            <div className="flex items-center gap-3">
-              <input
-                type="text"
-                value={character.name}
-                onChange={(e) => update({ name: e.target.value })}
-                placeholder="Name your hero..."
-                className="font-serif text-2xl sm:text-3xl font-semibold text-stone-900 bg-transparent border-b border-transparent hover:border-stone-300 focus:border-[#B85D36] focus:outline-none transition-colors w-full max-w-md tracking-tight"
-                title="Click to edit character name"
-              />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <input
+                  type="text"
+                  value={character.name}
+                  onChange={(e) => update({ name: e.target.value })}
+                  placeholder="Name your hero..."
+                  className="font-serif text-2xl sm:text-3xl font-semibold text-stone-900 bg-transparent border-b border-transparent hover:border-stone-300 focus:border-[#B85D36] focus:outline-none transition-colors w-full tracking-tight"
+                  title="Click to edit character name"
+                />
+              </div>
+
+              {/* Character Level Control directly next to character name */}
+              <div className="flex items-center gap-2 bg-[#FAF8F5] px-3.5 py-1.5 rounded-xl border border-[#E5DFD5] self-start sm:self-auto shrink-0 shadow-xs">
+                <span className="text-xs text-stone-600 font-medium">Level:</span>
+                <select
+                  value={character.level}
+                  onChange={(e) => handleSetLevel(parseInt(e.target.value) || 1)}
+                  className="bg-transparent text-stone-900 font-mono font-bold text-sm focus:outline-none cursor-pointer"
+                  title="Character Level (governs subclass unlock, spell slots, and features)"
+                >
+                  {Array.from({ length: 20 }, (_, i) => i + 1).map((lvl) => (
+                    <option key={lvl} value={lvl} className="bg-white text-stone-900">
+                      Level {lvl}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Zero-pill metadata line */}
@@ -528,37 +630,8 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
                 <span className="text-xs text-stone-600 font-medium">Starting Level:</span>
                 <select
                   value={character.level}
-                  onChange={(e) => {
-                    const newLvl = parseInt(e.target.value) || 1;
-                    const c = FIVE_TOOLS_CLASSES.find((cl) => cl.name === character.className) || selectedClassObj;
-                    const conMod = getAbilityModifier(character.baseAbilities.con + (character.customAbilityBonuses?.con || 0));
-                    const baseHp = c.hd.faces + conMod + (newLvl - 1) * (Math.floor(c.hd.faces / 2) + 1 + conMod);
-                    const classFeatures = (c.features || [])
-                      .filter((f) => f.level <= newLvl)
-                      .map((f) => ({
-                        id: `f_cls_${f.name.toLowerCase().replace(/\s+/g, '_')}`,
-                        name: f.name,
-                        source: 'Class' as const,
-                        level: f.level,
-                        description: render5eToolsEntries(f.entries),
-                      }));
-                    const newMaxSlot = getMaxSpellLevel(character.className, newLvl);
-                    const filteredSpells = (character.spells || []).filter((s) => s.level <= newMaxSlot);
-
-                    update({
-                      level: newLvl,
-                      hitDiceTotal: newLvl,
-                      spellSlotsTotal: getClassSpellSlots(character.className, newLvl),
-                      spells: filteredSpells,
-                      hpMax: Math.max(1, baseHp),
-                      hpCurrent: Math.max(1, baseHp),
-                      features: [
-                        ...character.features.filter((f) => f.source !== 'Class'),
-                        ...classFeatures,
-                      ],
-                    });
-                  }}
-                  className="bg-transparent text-stone-900 font-mono font-semibold text-xs focus:outline-none"
+                  onChange={(e) => handleSetLevel(parseInt(e.target.value) || 1)}
+                  className="bg-transparent text-stone-900 font-mono font-semibold text-xs focus:outline-none cursor-pointer"
                 >
                   {Array.from({ length: 20 }, (_, i) => i + 1).map((lvl) => (
                     <option key={lvl} value={lvl} className="bg-white text-stone-900">
@@ -600,32 +673,70 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
               })}
             </div>
 
-            {/* Subclasses Selection */}
-            {selectedClassObj.subclasses && selectedClassObj.subclasses.length > 0 && (
-              <div className="p-5 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA] space-y-3">
-                <div className="text-xs font-semibold text-stone-900 uppercase tracking-wider">
-                  Select {selectedClassObj.name} Subclass / Archetype
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {selectedClassObj.subclasses.map((sub) => {
-                    const isSelected = character.subclass === sub.name;
-                    return (
+            {/* Subclasses Selection (Level-Gated by 5e Rules) */}
+            {selectedClassObj.subclasses && selectedClassObj.subclasses.length > 0 && (() => {
+              const reqSubclassLvl = getClassSubclassLevel(selectedClassObj.name);
+              const isUnlocked = character.level >= reqSubclassLvl;
+
+              if (!isUnlocked) {
+                return (
+                  <div className="p-5 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA] space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs font-semibold text-stone-900 uppercase tracking-wider flex items-center gap-2">
+                        <Lock className="w-3.5 h-3.5 text-stone-500" />
+                        <span>{selectedClassObj.name} Subclass / Archetype</span>
+                      </div>
+                      <span className="text-[11px] font-mono text-[#B85D36] font-semibold bg-[#F5EBE6] px-2.5 py-0.5 rounded-md border border-[#ECD9CE]">
+                        Unlocks at Level {reqSubclassLvl}
+                      </span>
+                    </div>
+                    <p className="text-xs text-stone-600 leading-relaxed">
+                      {selectedClassObj.name}s specialize into archetypes (such as {selectedClassObj.subclasses.map((s) => s.name).slice(0, 3).join(', ')}) upon reaching <strong>Level {reqSubclassLvl}</strong>. Currently at Level {character.level}, subclass specialization is not available.
+                    </p>
+                    <div className="pt-1">
                       <button
-                        key={sub.name}
-                        onClick={() => update({ subclass: sub.name })}
-                        className={`px-3.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                          isSelected
-                            ? 'bg-stone-900 text-white border-stone-900 shadow-sm'
-                            : 'bg-white border-[#E0D9CE] text-stone-700 hover:border-stone-400'
-                        }`}
+                        type="button"
+                        onClick={() => handleSetLevel(reqSubclassLvl)}
+                        className="text-xs font-medium text-[#B85D36] hover:text-[#9A4927] transition-colors underline flex items-center gap-1 cursor-pointer"
                       >
-                        {sub.name}
+                        Set character level to {reqSubclassLvl} to unlock {selectedClassObj.name} archetypes
                       </button>
-                    );
-                  })}
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="p-5 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs font-semibold text-stone-900 uppercase tracking-wider">
+                      Select {selectedClassObj.name} Subclass / Archetype
+                    </div>
+                    <span className="text-[11px] font-mono text-[#2E4A3E] font-medium bg-[#EBF3EF] px-2.5 py-0.5 rounded-md border border-[#D5E5DD]">
+                      Unlocked (Level {reqSubclassLvl}+)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {selectedClassObj.subclasses.map((sub) => {
+                      const isSelected = character.subclass === sub.name;
+                      return (
+                        <button
+                          key={sub.name}
+                          onClick={() => update({ subclass: sub.name })}
+                          className={`px-3.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                            isSelected
+                              ? 'bg-stone-900 text-white border-stone-900 shadow-sm'
+                              : 'bg-white border-[#E0D9CE] text-stone-700 hover:border-stone-400'
+                          }`}
+                        >
+                          {sub.name}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Class Features */}
             <div className="p-5 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA] space-y-3">
@@ -878,18 +989,28 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
               </div>
             </div>
 
-            {/* Roleplay Toolbar: Fast 1-click population */}
+            {/* Roleplay Toolbar: Fast 1-click population & Option Explorer */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-[#FAF8F5] border border-[#E8E3DA] rounded-xl">
               <div>
                 <span className="text-xs font-semibold text-stone-900">
                   {selectedBgObj.name} Roleplay Tables
                 </span>
                 <p className="text-[11px] text-stone-600">
-                  Quickly auto-fill or roll suggested traits, ideals, bonds, and flaws from the 5e compendium.
+                  Click on any characteristic below to browse and select from {selectedBgObj.name} 5e tables.
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={toggleAllBgOptions}
+                  className="px-3 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-800 border border-[#DDD5C7] text-xs font-medium transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                  title="Toggle all 4 background option lists"
+                >
+                  <BookOpen className="w-3.5 h-3.5 text-[#B85D36]" />
+                  <span>{areAllBgOptionsExpanded ? 'Collapse All Tables' : `Browse ${selectedBgObj.name} Tables`}</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => {
@@ -904,7 +1025,7 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
                       flaws: flaws[0] || character.flaws,
                     });
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium transition-all shadow-sm"
+                  className="px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium transition-all shadow-sm cursor-pointer"
                 >
                   Auto-Fill 5e Defaults
                 </button>
@@ -923,7 +1044,7 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
                       flaws: flaws[Math.floor(Math.random() * flaws.length)] || character.flaws,
                     });
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-800 border border-[#DDD5C7] text-xs font-medium transition-all shadow-sm flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-800 border border-[#DDD5C7] text-xs font-medium transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
                 >
                   <Dices className="w-3.5 h-3.5 text-[#B85D36]" />
                   <span>Roll 5e Tables</span>
@@ -931,47 +1052,148 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
               </div>
             </div>
 
-            {/* Personality 4-Field Grid */}
+            {/* Personality 4-Field Grid with Clickable 5e Background Option Trays */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-stone-900 block">Personality Traits</label>
-                <textarea
-                  value={character.personalityTraits}
-                  onChange={(e) => update({ personalityTraits: e.target.value })}
-                  placeholder="Quirks, habits, demeanor..."
-                  className="w-full h-20 p-3 bg-[#FAF8F5] border border-[#E5DFD5] rounded-xl text-xs text-stone-900 focus:outline-none focus:border-stone-400 resize-none leading-relaxed"
-                />
-              </div>
+              {[
+                {
+                  key: 'traits' as const,
+                  label: 'Personality Traits',
+                  updateKey: 'personalityTraits' as const,
+                  value: character.personalityTraits,
+                  placeholder: 'Quirks, habits, demeanor...',
+                  options: selectedBgObj.suggestedTraits || [],
+                },
+                {
+                  key: 'ideals' as const,
+                  label: 'Ideals',
+                  updateKey: 'ideals' as const,
+                  value: character.ideals,
+                  placeholder: 'Guiding principles, morals, beliefs...',
+                  options: selectedBgObj.suggestedIdeals || [],
+                },
+                {
+                  key: 'bonds' as const,
+                  label: 'Bonds',
+                  updateKey: 'bonds' as const,
+                  value: character.bonds,
+                  placeholder: 'People, places, or heirlooms you would die for...',
+                  options: selectedBgObj.suggestedBonds || [],
+                },
+                {
+                  key: 'flaws' as const,
+                  label: 'Flaws',
+                  updateKey: 'flaws' as const,
+                  value: character.flaws,
+                  placeholder: 'Weaknesses, vices, blind spots...',
+                  options: selectedBgObj.suggestedFlaws || [],
+                },
+              ].map((field) => {
+                const isOpen = expandedBgOptions[field.key];
+                return (
+                  <div key={field.key} className="p-4 rounded-xl bg-white border border-[#E5DFD5] shadow-xs space-y-3">
+                    {/* Header: Clickable label + badge + roll */}
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => toggleBgOption(field.key)}
+                        className="flex items-center gap-2 text-xs font-semibold text-stone-900 hover:text-[#B85D36] transition-colors cursor-pointer text-left group"
+                        title={`Click to view ${selectedBgObj.name} ${field.label} options`}
+                      >
+                        <span>{field.label}</span>
+                        <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-md bg-[#FAF8F5] border border-[#E8E3DA] text-[#B85D36] group-hover:border-[#B85D36]/40 flex items-center gap-1">
+                          <BookOpen className="w-2.5 h-2.5" />
+                          <span>{selectedBgObj.name} ({field.options.length})</span>
+                          {isOpen ? (
+                            <ChevronUp className="w-2.5 h-2.5" />
+                          ) : (
+                            <ChevronDown className="w-2.5 h-2.5" />
+                          )}
+                        </span>
+                      </button>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-stone-900 block">Ideals</label>
-                <textarea
-                  value={character.ideals}
-                  onChange={(e) => update({ ideals: e.target.value })}
-                  placeholder="Guiding principles, morals, beliefs..."
-                  className="w-full h-20 p-3 bg-[#FAF8F5] border border-[#E5DFD5] rounded-xl text-xs text-stone-900 focus:outline-none focus:border-stone-400 resize-none leading-relaxed"
-                />
-              </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (field.options.length > 0) {
+                              const picked = field.options[Math.floor(Math.random() * field.options.length)];
+                              update({ [field.updateKey]: picked });
+                            }
+                          }}
+                          className="px-2 py-0.5 rounded-md bg-[#FAF8F5] hover:bg-[#F2ECE3] border border-[#E0D9CE] text-[10px] text-stone-700 font-medium flex items-center gap-1 transition-all cursor-pointer"
+                          title={`Roll 1d${field.options.length} for ${field.label}`}
+                        >
+                          <Dices className="w-2.5 h-2.5 text-[#B85D36]" />
+                          <span>Roll d{field.options.length || 4}</span>
+                        </button>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-stone-900 block">Bonds</label>
-                <textarea
-                  value={character.bonds}
-                  onChange={(e) => update({ bonds: e.target.value })}
-                  placeholder="People, places, or heirlooms you would die for..."
-                  className="w-full h-20 p-3 bg-[#FAF8F5] border border-[#E5DFD5] rounded-xl text-xs text-stone-900 focus:outline-none focus:border-stone-400 resize-none leading-relaxed"
-                />
-              </div>
+                        <button
+                          type="button"
+                          onClick={() => toggleBgOption(field.key)}
+                          className="text-stone-500 hover:text-stone-900 transition-colors p-1 cursor-pointer"
+                          aria-label={isOpen ? 'Hide options' : 'Show options'}
+                        >
+                          {isOpen ? (
+                            <ChevronUp className="w-3.5 h-3.5" />
+                          ) : (
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-stone-900 block">Flaws</label>
-                <textarea
-                  value={character.flaws}
-                  onChange={(e) => update({ flaws: e.target.value })}
-                  placeholder="Weaknesses, vices, blind spots..."
-                  className="w-full h-20 p-3 bg-[#FAF8F5] border border-[#E5DFD5] rounded-xl text-xs text-stone-900 focus:outline-none focus:border-stone-400 resize-none leading-relaxed"
-                />
-              </div>
+                    {/* Textarea */}
+                    <textarea
+                      value={field.value}
+                      onChange={(e) => update({ [field.updateKey]: e.target.value })}
+                      placeholder={field.placeholder}
+                      className="w-full h-20 p-3 bg-[#FAF8F5] border border-[#E5DFD5] rounded-xl text-xs text-stone-900 focus:outline-none focus:border-stone-400 resize-none leading-relaxed"
+                    />
+
+                    {/* Option list: Click to pick from selected background */}
+                    {isOpen && (
+                      <div className="pt-2 border-t border-[#F0EBE1] space-y-2">
+                        <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-stone-500 font-semibold">
+                          <span>Click to select {selectedBgObj.name} option:</span>
+                          <span className="text-stone-400 font-mono">d{field.options.length} table</span>
+                        </div>
+
+                        <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                          {field.options.map((opt, idx) => {
+                            const isSelected = field.value?.trim() === opt.trim();
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => update({ [field.updateKey]: opt })}
+                                className={`w-full text-left p-2.5 rounded-xl text-xs leading-relaxed transition-all flex items-start gap-2.5 border cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-[#FAF6F0] border-[#B85D36] text-stone-900 font-medium shadow-xs ring-1 ring-[#B85D36]/20'
+                                    : 'bg-[#FAF8F5] hover:bg-stone-50 border-[#E8E3DA] text-stone-700 hover:border-stone-400'
+                                }`}
+                              >
+                                <span
+                                  className={`font-mono text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 mt-0.5 ${
+                                    isSelected
+                                      ? 'bg-[#B85D36] text-white'
+                                      : 'bg-white text-stone-600 border border-[#DDD5C7]'
+                                  }`}
+                                >
+                                  {idx + 1}
+                                </span>
+                                <span className="flex-1 text-[11px] leading-relaxed">{opt}</span>
+                                {isSelected && (
+                                  <Check className="w-3.5 h-3.5 text-[#B85D36] shrink-0 mt-0.5" />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

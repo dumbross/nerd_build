@@ -264,6 +264,19 @@ export function isSpellcastingClass(className: string): boolean {
 }
 
 /**
+ * Returns the level at which a class unlocks their subclass / archetype in 5e rules.
+ * - Cleric, Sorcerer, Warlock: Level 1
+ * - Druid, Wizard: Level 2
+ * - Barbarian, Bard, Fighter, Monk, Paladin, Ranger, Rogue, Artificer: Level 3
+ */
+export function getClassSubclassLevel(className: string): number {
+  const norm = className.toLowerCase().trim();
+  if (['cleric', 'sorcerer', 'warlock'].includes(norm)) return 1;
+  if (['wizard', 'druid'].includes(norm)) return 2;
+  return 3;
+}
+
+/**
  * Evaluates whether a spell can be selected by a character given their class, level, and spell slot restrictions.
  */
 export function isSpellEligible(
