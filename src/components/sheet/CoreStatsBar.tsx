@@ -15,7 +15,6 @@ import {
   Bed,
   Moon,
   Skull,
-  Crosshair,
 } from 'lucide-react';
 import { Character } from '../../types/character';
 import { FIVE_TOOLS_CLASSES } from '../../data/classes';
@@ -69,15 +68,19 @@ export const CoreStatsBar: React.FC<CoreStatsBarProps> = ({
   };
 
   const handleShortRest = () => {
-    // Regain short rest features (Second Wind, Action Surge, etc.)
     const updatedFeatures = (character.features || []).map((f) => {
-      if (f.usesMax && (f.name.includes('Second Wind') || f.name.includes('Action Surge') || f.name.includes('Ki') || f.name.includes('Channel Divinity'))) {
+      if (
+        f.usesMax &&
+        (f.name.includes('Second Wind') ||
+          f.name.includes('Action Surge') ||
+          f.name.includes('Ki') ||
+          f.name.includes('Channel Divinity'))
+      ) {
         return { ...f, usesRemaining: f.usesMax };
       }
       return f;
     });
 
-    // Roll 1 hit die to heal if available
     let healedHp = character.hpCurrent;
     let spent = character.hitDiceSpent || 0;
     if (spent < character.hitDiceTotal) {
@@ -87,7 +90,7 @@ export const CoreStatsBar: React.FC<CoreStatsBarProps> = ({
       const conMod = getAbilityModifier(abilities.con);
       const roll = rollDice(dieSides, 1, conMod, 'Hit Die Recovery');
       healedHp = Math.min(character.hpMax, character.hpCurrent + Math.max(1, roll.total));
-      onQuickRoll(dieSides, 1, conMod, `Short Rest Hit Die (d${dieSides}+${conMod})`);
+      onQuickRoll(dieSides, 1, conMod, `Short Rest Hit Die (d${dieSides}${formatModifier(conMod)})`);
     }
 
     onUpdateCharacter({
@@ -100,7 +103,6 @@ export const CoreStatsBar: React.FC<CoreStatsBarProps> = ({
   };
 
   const handleLongRest = () => {
-    // Reset HP, hit dice, spell slots, and feature uses
     const resetFeatures = (character.features || []).map((f) => ({
       ...f,
       usesRemaining: f.usesMax,
@@ -132,12 +134,12 @@ export const CoreStatsBar: React.FC<CoreStatsBarProps> = ({
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+    <div className="bg-white border border-[#E5DFD5] rounded-2xl p-5 sm:p-6 shadow-sm space-y-5">
       {/* Top Meta Line & Rests */}
-      <div className="flex items-center justify-between flex-wrap gap-4 border-b border-slate-800/80 pb-4">
+      <div className="flex items-center justify-between flex-wrap gap-4 border-b border-[#E8E3DA] pb-4">
         <div>
           <div className="flex items-center gap-3">
-            <h2 className="font-serif text-2xl font-black text-amber-100 tracking-wide">
+            <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-stone-900 tracking-tight">
               {character.name}
             </h2>
             <button
@@ -148,26 +150,26 @@ export const CoreStatsBar: React.FC<CoreStatsBarProps> = ({
                   updatedAt: new Date().toISOString(),
                 })
               }
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 border ${
+              className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 border ${
                 character.inspiration
-                  ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/30'
-                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-amber-300'
+                  ? 'bg-stone-900 text-white border-stone-900 shadow-sm'
+                  : 'bg-[#FAF8F5] border-[#E0D9CE] text-stone-600 hover:text-stone-900'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-3.5 h-3.5 text-[#B85D36]" />
               <span>Inspiration</span>
             </button>
           </div>
-          <div className="text-xs text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-amber-300">
+          <div className="text-xs text-stone-600 mt-1 flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-stone-900">
               Level {character.level} {character.className}
             </span>
             {character.subclass && <span>({character.subclass})</span>}
-            <span>·</span>
-            <span>{character.race} {character.subrace ? `(${character.subrace})` : ''}</span>
-            <span>·</span>
+            <span className="text-stone-300">·</span>
+            <span>{character.race}{character.subrace ? ` (${character.subrace})` : ''}</span>
+            <span className="text-stone-300">·</span>
             <span>{character.background}</span>
-            <span>·</span>
+            <span className="text-stone-300">·</span>
             <span>{character.alignment}</span>
           </div>
         </div>
@@ -176,18 +178,18 @@ export const CoreStatsBar: React.FC<CoreStatsBarProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={handleShortRest}
-            className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-colors border border-slate-700/60"
-            title="Short Rest (Heal via Hit Die & recharge short-rest abilities)"
+            className="px-3 py-1.5 rounded-xl bg-white hover:bg-stone-50 text-stone-800 text-xs font-medium flex items-center gap-1.5 transition-all border border-[#DDD5C7] shadow-sm"
+            title="Short Rest (Heal via Hit Die & recharge abilities)"
           >
-            <Bed className="w-4 h-4 text-amber-400" />
+            <Bed className="w-3.5 h-3.5 text-stone-600" />
             <span>Short Rest</span>
           </button>
           <button
             onClick={handleLongRest}
-            className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-colors border border-slate-700/60"
+            className="px-3 py-1.5 rounded-xl bg-white hover:bg-stone-50 text-stone-800 text-xs font-medium flex items-center gap-1.5 transition-all border border-[#DDD5C7] shadow-sm"
             title="Long Rest (Full heal, restore hit dice, recover spell slots)"
           >
-            <Moon className="w-4 h-4 text-indigo-400" />
+            <Moon className="w-3.5 h-3.5 text-[#B85D36]" />
             <span>Long Rest</span>
           </button>
         </div>
@@ -196,15 +198,15 @@ export const CoreStatsBar: React.FC<CoreStatsBarProps> = ({
       {/* Main Stats Row */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
         {/* Armor Class */}
-        <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 flex flex-col items-center justify-center text-center">
-          <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-            <Shield className="w-3.5 h-3.5 text-amber-400" />
+        <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E5DFD5] flex flex-col items-center justify-center text-center shadow-sm">
+          <div className="flex items-center gap-1 text-[10px] font-semibold text-stone-600 uppercase tracking-wider mb-1">
+            <Shield className="w-3.5 h-3.5 text-stone-600" />
             <span>Armor Class</span>
           </div>
-          <div className="text-3xl font-mono font-black text-slate-100 tabular-nums">
+          <div className="text-3xl font-mono font-bold text-stone-900 tabular-nums">
             {ac}
           </div>
-          <div className="text-[10px] text-slate-500 mt-0.5">
+          <div className="text-[10px] text-stone-600 mt-0.5 truncate max-w-full">
             {character.armor?.find((a) => a.equipped)?.name || 'Natural / Unarmored'}
           </div>
         </div>
@@ -212,83 +214,83 @@ export const CoreStatsBar: React.FC<CoreStatsBarProps> = ({
         {/* Initiative */}
         <div
           onClick={() => onQuickRoll(20, 1, initiative, 'Initiative Check')}
-          className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 flex flex-col items-center justify-center text-center cursor-pointer hover:border-amber-500/50 hover:bg-slate-900 transition-all group"
+          className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E5DFD5] flex flex-col items-center justify-center text-center cursor-pointer hover:border-stone-400 hover:bg-white transition-all group shadow-sm"
           title="Click to roll Initiative!"
         >
-          <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 group-hover:text-amber-400">
-            <Zap className="w-3.5 h-3.5 text-amber-400" />
+          <div className="flex items-center gap-1 text-[10px] font-semibold text-stone-600 uppercase tracking-wider mb-1 group-hover:text-stone-900">
+            <Zap className="w-3.5 h-3.5 text-[#B85D36]" />
             <span>Initiative</span>
           </div>
-          <div className="text-3xl font-mono font-black text-slate-100 group-hover:text-amber-300 tabular-nums">
+          <div className="text-3xl font-mono font-bold text-stone-900 tabular-nums">
             {formatModifier(initiative)}
           </div>
-          <div className="text-[10px] text-slate-500 mt-0.5 group-hover:text-amber-400/80">
-            Click to Roll d20
+          <div className="text-[10px] text-stone-600 mt-0.5 group-hover:text-stone-900">
+            Roll d20
           </div>
         </div>
 
         {/* Speed */}
-        <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 flex flex-col items-center justify-center text-center">
-          <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-            <Footprints className="w-3.5 h-3.5 text-amber-400" />
+        <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E5DFD5] flex flex-col items-center justify-center text-center shadow-sm">
+          <div className="flex items-center gap-1 text-[10px] font-semibold text-stone-600 uppercase tracking-wider mb-1">
+            <Footprints className="w-3.5 h-3.5 text-stone-600" />
             <span>Speed</span>
           </div>
-          <div className="text-3xl font-mono font-black text-slate-100 tabular-nums">
+          <div className="text-3xl font-mono font-bold text-stone-900 tabular-nums">
             {character.speed}
-            <span className="text-xs font-normal text-slate-400 ml-1">ft</span>
+            <span className="text-xs font-normal text-stone-600 ml-1">ft</span>
           </div>
-          <div className="text-[10px] text-slate-500 mt-0.5">Walking Base</div>
+          <div className="text-[10px] text-stone-600 mt-0.5">Walking Base</div>
         </div>
 
         {/* Proficiency Bonus */}
-        <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 flex flex-col items-center justify-center text-center">
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+        <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E5DFD5] flex flex-col items-center justify-center text-center shadow-sm">
+          <div className="text-[10px] font-semibold text-stone-600 uppercase tracking-wider mb-1">
             Proficiency
           </div>
-          <div className="text-3xl font-mono font-black text-amber-400 tabular-nums">
+          <div className="text-3xl font-mono font-bold text-[#B85D36] tabular-nums">
             {formatModifier(profBonus)}
           </div>
-          <div className="text-[10px] text-slate-500 mt-0.5">Tier {Math.ceil(character.level / 4)}</div>
+          <div className="text-[10px] text-stone-600 mt-0.5">Tier {Math.ceil(character.level / 4)}</div>
         </div>
 
         {/* Hit Points Bar & Quick Controls */}
-        <div className="col-span-2 p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 flex flex-col justify-between">
+        <div className="col-span-2 p-4 rounded-xl bg-[#FAF8F5] border border-[#E5DFD5] flex flex-col justify-between shadow-sm">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500/20" />
+            <span className="font-semibold text-stone-700 uppercase tracking-wider flex items-center gap-1.5">
+              <Heart className="w-3.5 h-3.5 text-[#2E4A3E]" />
               <span>Hit Points</span>
             </span>
-            <span className="font-mono font-bold text-sm text-slate-200 tabular-nums">
+            <span className="font-mono font-bold text-sm text-stone-900 tabular-nums">
               {character.hpCurrent} / {character.hpMax}
               {character.tempHp > 0 && (
-                <span className="text-blue-400 font-semibold ml-1.5">(+{character.tempHp} temp)</span>
+                <span className="text-[#B85D36] font-semibold ml-1.5">(+{character.tempHp} temp)</span>
               )}
             </span>
           </div>
 
           {/* Health Bar */}
-          <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden my-2">
+          <div className="w-full bg-[#E5DFD5] h-2 rounded-full overflow-hidden my-2">
             <div
               className={`h-full transition-all duration-300 rounded-full ${
-                hpPercent > 50 ? 'bg-emerald-500' : hpPercent > 25 ? 'bg-amber-500' : 'bg-rose-500'
+                hpPercent > 50 ? 'bg-[#2E4A3E]' : hpPercent > 25 ? 'bg-[#B85D36]' : 'bg-rose-700'
               }`}
               style={{ width: `${hpPercent}%` }}
             />
           </div>
 
-          {/* Quick HP Heal / Damage Controls */}
-          <div className="flex items-center justify-between gap-2 pt-1">
+          {/* Quick HP Controls */}
+          <div className="flex items-center justify-between gap-1.5 pt-1">
             <div className="flex items-center gap-1">
               <button
                 onClick={() => handleAdjustHp(-1)}
-                className="w-6 h-6 rounded bg-slate-800 hover:bg-rose-900/60 text-slate-200 text-xs font-bold"
+                className="w-6 h-6 rounded-lg bg-white hover:bg-stone-100 text-stone-800 border border-[#DDD5C7] text-xs font-semibold shadow-sm"
                 title="Damage 1 HP"
               >
                 -1
               </button>
               <button
                 onClick={() => handleAdjustHp(-5)}
-                className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-rose-900/60 text-slate-200 text-xs font-bold"
+                className="px-1.5 py-0.5 rounded-lg bg-white hover:bg-stone-100 text-stone-800 border border-[#DDD5C7] text-xs font-semibold shadow-sm"
                 title="Damage 5 HP"
               >
                 -5
@@ -300,18 +302,18 @@ export const CoreStatsBar: React.FC<CoreStatsBarProps> = ({
                 type="number"
                 value={hpInput}
                 onChange={(e) => setHpInput(e.target.value)}
-                className="w-12 px-1.5 py-0.5 bg-slate-900 border border-slate-700 rounded text-center text-xs font-mono font-bold text-slate-200 focus:outline-none"
+                className="w-11 px-1.5 py-0.5 bg-white border border-[#DDD5C7] rounded-lg text-center text-xs font-mono font-bold text-stone-900 focus:outline-none"
                 min="1"
               />
               <button
                 onClick={() => handleApplyHpInput(true)}
-                className="px-2 py-0.5 rounded bg-rose-600/30 hover:bg-rose-600/50 text-rose-300 border border-rose-500/40 text-[11px] font-bold"
+                className="px-2 py-0.5 rounded-lg bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-semibold shadow-sm"
               >
                 Dmg
               </button>
               <button
                 onClick={() => handleApplyHpInput(false)}
-                className="px-2 py-0.5 rounded bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold"
+                className="px-2 py-0.5 rounded-lg bg-white hover:bg-emerald-50 text-[#2E4A3E] border border-emerald-200 text-[11px] font-semibold shadow-sm"
               >
                 Heal
               </button>
@@ -320,14 +322,14 @@ export const CoreStatsBar: React.FC<CoreStatsBarProps> = ({
             <div className="flex items-center gap-1">
               <button
                 onClick={() => handleAdjustHp(5)}
-                className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-emerald-900/60 text-slate-200 text-xs font-bold"
+                className="px-1.5 py-0.5 rounded-lg bg-white hover:bg-stone-100 text-stone-800 border border-[#DDD5C7] text-xs font-semibold shadow-sm"
                 title="Heal 5 HP"
               >
                 +5
               </button>
               <button
                 onClick={() => handleAdjustHp(1)}
-                className="w-6 h-6 rounded bg-slate-800 hover:bg-emerald-900/60 text-slate-200 text-xs font-bold"
+                className="w-6 h-6 rounded-lg bg-white hover:bg-stone-100 text-stone-800 border border-[#DDD5C7] text-xs font-semibold shadow-sm"
                 title="Heal 1 HP"
               >
                 +1
@@ -340,54 +342,52 @@ export const CoreStatsBar: React.FC<CoreStatsBarProps> = ({
       {/* Hit Dice & Death Saves Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
         {/* Hit Dice */}
-        <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between text-xs">
+        <div className="p-3.5 rounded-xl bg-[#FAF8F5] border border-[#E5DFD5] flex items-center justify-between text-xs shadow-sm">
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-stone-600 block">
               Hit Dice
             </span>
-            <div className="font-mono font-bold text-slate-200 text-sm mt-0.5">
+            <div className="font-mono font-bold text-stone-900 text-sm mt-0.5">
               {character.level - (character.hitDiceSpent || 0)} / {character.level} (d
               {FIVE_TOOLS_CLASSES.find((c) => c.name.toLowerCase() === character.className.toLowerCase())?.hd.faces || 8})
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => {
-                if ((character.hitDiceSpent || 0) < character.level) {
-                  onUpdateCharacter({
-                    ...character,
-                    hitDiceSpent: (character.hitDiceSpent || 0) + 1,
-                    updatedAt: new Date().toISOString(),
-                  });
-                }
-              }}
-              disabled={(character.hitDiceSpent || 0) >= character.level}
-              className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium disabled:opacity-40"
-            >
-              Spend Die
-            </button>
-          </div>
+          <button
+            onClick={() => {
+              if ((character.hitDiceSpent || 0) < character.level) {
+                onUpdateCharacter({
+                  ...character,
+                  hitDiceSpent: (character.hitDiceSpent || 0) + 1,
+                  updatedAt: new Date().toISOString(),
+                });
+              }
+            }}
+            disabled={(character.hitDiceSpent || 0) >= character.level}
+            className="px-3 py-1 rounded-lg bg-white hover:bg-stone-50 border border-[#DDD5C7] text-stone-800 text-xs font-medium disabled:opacity-40 shadow-sm"
+          >
+            Spend Die
+          </button>
         </div>
 
         {/* Death Saves */}
-        <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-slate-400 text-[10px]">
-            <Skull className="w-3.5 h-3.5 text-slate-400" />
+        <div className="p-3.5 rounded-xl bg-[#FAF8F5] border border-[#E5DFD5] flex items-center justify-between text-xs shadow-sm">
+          <div className="flex items-center gap-1.5 font-semibold uppercase tracking-wider text-stone-600 text-[10px]">
+            <Skull className="w-3.5 h-3.5 text-stone-600" />
             <span>Death Saves</span>
           </div>
 
           <div className="flex items-center gap-4">
             {/* Successes */}
             <div className="flex items-center gap-1">
-              <span className="text-[10px] text-emerald-400 font-bold mr-1">SUCC</span>
+              <span className="text-[10px] text-[#2E4A3E] font-semibold mr-1">SUCC</span>
               {[1, 2, 3].map((idx) => (
                 <button
                   key={idx}
                   onClick={() => handleToggleDeathSave('successes', idx)}
-                  className={`w-4 h-4 rounded-full border transition-colors ${
+                  className={`w-4 h-4 rounded-full border transition-all ${
                     (character.deathSaves?.successes || 0) >= idx
-                      ? 'bg-emerald-500 border-emerald-400 shadow-sm shadow-emerald-500/50'
-                      : 'border-slate-700 bg-slate-900 hover:border-slate-500'
+                      ? 'bg-[#2E4A3E] border-[#2E4A3E]'
+                      : 'border-stone-300 bg-white hover:border-stone-500'
                   }`}
                 />
               ))}
@@ -395,15 +395,15 @@ export const CoreStatsBar: React.FC<CoreStatsBarProps> = ({
 
             {/* Failures */}
             <div className="flex items-center gap-1">
-              <span className="text-[10px] text-rose-400 font-bold mr-1">FAIL</span>
+              <span className="text-[10px] text-rose-600 font-semibold mr-1">FAIL</span>
               {[1, 2, 3].map((idx) => (
                 <button
                   key={idx}
                   onClick={() => handleToggleDeathSave('failures', idx)}
-                  className={`w-4 h-4 rounded-full border transition-colors ${
+                  className={`w-4 h-4 rounded-full border transition-all ${
                     (character.deathSaves?.failures || 0) >= idx
-                      ? 'bg-rose-500 border-rose-400 shadow-sm shadow-rose-500/50'
-                      : 'border-slate-700 bg-slate-900 hover:border-slate-500'
+                      ? 'bg-rose-700 border-rose-700'
+                      : 'border-stone-300 bg-white hover:border-stone-500'
                   }`}
                 />
               ))}

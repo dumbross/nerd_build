@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Eye, Shield, Award, Sparkles } from 'lucide-react';
+import { Eye, Shield, Award } from 'lucide-react';
 import { AbilityName, Character, SKILLS_LIST, SkillName } from '../../types/character';
 import {
   calculatePassivePerception,
@@ -51,7 +51,6 @@ export const AbilitiesSkillsColumn: React.FC<AbilitiesSkillsColumnProps> = ({
   const passiveInvestigation =
     10 + getSkillModifier('investigation', abilities, character.skillProficiencies, character.skillExpertise, profBonus);
 
-  // Toggle Saving Throw Proficiency
   const handleToggleSavingThrow = (ab: AbilityName) => {
     const isProf = character.savingThrowProficiencies.includes(ab);
     const updated = isProf
@@ -64,7 +63,6 @@ export const AbilitiesSkillsColumn: React.FC<AbilitiesSkillsColumnProps> = ({
     });
   };
 
-  // Toggle Skill Proficiency (Click cycle: None -> Proficient -> Expertise -> None)
   const handleCycleSkillProficiency = (skillName: SkillName) => {
     const isProf = character.skillProficiencies.includes(skillName);
     const isExpert = character.skillExpertise.includes(skillName);
@@ -91,7 +89,7 @@ export const AbilitiesSkillsColumn: React.FC<AbilitiesSkillsColumnProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* 6 Ability Score Cards in 2x3 or 3x2 grid */}
+      {/* 6 Ability Score Cards */}
       <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-3 gap-2">
         {ABILITIES_CONFIG.map((ab) => {
           const score = abilities[ab.key];
@@ -101,16 +99,16 @@ export const AbilitiesSkillsColumn: React.FC<AbilitiesSkillsColumnProps> = ({
             <div
               key={ab.key}
               onClick={() => onQuickRoll(20, 1, mod, `${ab.full} Check`)}
-              className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/50 hover:bg-slate-850 transition-all flex flex-col items-center justify-center text-center cursor-pointer group shadow-sm"
+              className="p-3 rounded-xl bg-white border border-[#E5DFD5] hover:border-stone-400 hover:shadow-sm transition-all flex flex-col items-center justify-center text-center cursor-pointer group"
               title={`Click to roll ${ab.full} check (d20${formatModifier(mod)})`}
             >
-              <span className="text-[10px] font-bold tracking-wider text-slate-400 group-hover:text-amber-300">
+              <span className="text-[10px] font-semibold tracking-wider text-stone-600 group-hover:text-stone-900">
                 {ab.label}
               </span>
-              <span className="text-2xl font-mono font-black text-amber-300 my-0.5 tabular-nums">
+              <span className="text-2xl font-mono font-bold text-stone-900 my-0.5 tabular-nums">
                 {formatModifier(mod)}
               </span>
-              <span className="text-[11px] font-mono text-slate-400 tabular-nums">
+              <span className="text-[11px] font-mono text-stone-600 tabular-nums">
                 {score}
               </span>
             </div>
@@ -119,13 +117,13 @@ export const AbilitiesSkillsColumn: React.FC<AbilitiesSkillsColumnProps> = ({
       </div>
 
       {/* Saving Throws List */}
-      <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
-        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-          <span className="flex items-center gap-1.5">
-            <Shield className="w-3.5 h-3.5 text-amber-400" />
+      <div className="p-4 rounded-2xl bg-white border border-[#E5DFD5] space-y-2.5 shadow-sm">
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-stone-600 flex items-center justify-between">
+          <span className="flex items-center gap-1.5 text-stone-800">
+            <Shield className="w-3.5 h-3.5 text-stone-600" />
             <span>Saving Throws</span>
           </span>
-          <span className="text-[9px] text-slate-500 font-normal">Click to roll</span>
+          <span className="text-[10px] text-stone-600 font-normal">Click to roll</span>
         </div>
 
         <div className="space-y-1">
@@ -136,7 +134,7 @@ export const AbilitiesSkillsColumn: React.FC<AbilitiesSkillsColumnProps> = ({
             return (
               <div
                 key={ab.key}
-                className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-800/60 transition-colors text-xs group"
+                className="flex items-center justify-between p-1.5 rounded-lg hover:bg-[#FAF8F5] transition-colors text-xs group"
               >
                 <div className="flex items-center gap-2">
                   <button
@@ -144,10 +142,10 @@ export const AbilitiesSkillsColumn: React.FC<AbilitiesSkillsColumnProps> = ({
                       e.stopPropagation();
                       handleToggleSavingThrow(ab.key);
                     }}
-                    className={`w-3.5 h-3.5 rounded-full border transition-colors flex items-center justify-center ${
+                    className={`w-3.5 h-3.5 rounded-full border transition-all flex items-center justify-center ${
                       isProf
-                        ? 'bg-amber-400 border-amber-300 text-slate-950 font-bold text-[8px]'
-                        : 'border-slate-700 bg-slate-950 hover:border-slate-500'
+                        ? 'bg-[#B85D36] border-[#B85D36] text-white text-[8px]'
+                        : 'border-stone-300 bg-white hover:border-stone-400'
                     }`}
                     title="Toggle Save Proficiency"
                   >
@@ -155,7 +153,7 @@ export const AbilitiesSkillsColumn: React.FC<AbilitiesSkillsColumnProps> = ({
                   </button>
                   <span
                     onClick={() => onQuickRoll(20, 1, mod, `${ab.full} Save`)}
-                    className="cursor-pointer text-slate-300 group-hover:text-amber-200 font-medium"
+                    className="cursor-pointer text-stone-800 group-hover:text-stone-950 font-medium"
                   >
                     {ab.full}
                   </span>
@@ -163,7 +161,7 @@ export const AbilitiesSkillsColumn: React.FC<AbilitiesSkillsColumnProps> = ({
 
                 <button
                   onClick={() => onQuickRoll(20, 1, mod, `${ab.full} Save`)}
-                  className="font-mono font-bold text-amber-300 hover:text-white tabular-nums px-1.5 py-0.5 rounded bg-slate-950/60 border border-slate-800"
+                  className="font-mono font-semibold text-stone-900 tabular-nums px-2 py-0.5 rounded-md bg-[#FAF8F5] border border-[#E8E3DA] hover:bg-stone-900 hover:text-white transition-colors"
                 >
                   {formatModifier(mod)}
                 </button>
@@ -174,16 +172,16 @@ export const AbilitiesSkillsColumn: React.FC<AbilitiesSkillsColumnProps> = ({
       </div>
 
       {/* Skills List */}
-      <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
-        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-          <span className="flex items-center gap-1.5">
-            <Award className="w-3.5 h-3.5 text-amber-400" />
+      <div className="p-4 rounded-2xl bg-white border border-[#E5DFD5] space-y-2.5 shadow-sm">
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-stone-600 flex items-center justify-between">
+          <span className="flex items-center gap-1.5 text-stone-800">
+            <Award className="w-3.5 h-3.5 text-stone-600" />
             <span>Skills</span>
           </span>
-          <span className="text-[9px] text-slate-500 font-normal">Click name to roll</span>
+          <span className="text-[10px] text-stone-600 font-normal">Click to roll</span>
         </div>
 
-        <div className="space-y-0.5 max-h-[380px] overflow-y-auto pr-1">
+        <div className="space-y-0.5 max-h-[360px] overflow-y-auto pr-1">
           {SKILLS_LIST.map((s) => {
             const isProf = character.skillProficiencies.includes(s.name);
             const isExpert = character.skillExpertise.includes(s.name);
@@ -192,17 +190,17 @@ export const AbilitiesSkillsColumn: React.FC<AbilitiesSkillsColumnProps> = ({
             return (
               <div
                 key={s.name}
-                className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-800/60 transition-colors text-xs group"
+                className="flex items-center justify-between p-1.5 rounded-lg hover:bg-[#FAF8F5] transition-colors text-xs group"
               >
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleCycleSkillProficiency(s.name)}
-                    className={`w-3.5 h-3.5 rounded-full border transition-colors flex items-center justify-center ${
+                    className={`w-3.5 h-3.5 rounded-full border transition-all flex items-center justify-center ${
                       isExpert
-                        ? 'bg-amber-400 border-amber-300 text-slate-950 font-bold text-[9px]'
+                        ? 'bg-stone-900 border-stone-900 text-white font-bold text-[8px]'
                         : isProf
-                        ? 'bg-slate-300 border-white text-slate-950 font-bold text-[8px]'
-                        : 'border-slate-700 bg-slate-950 hover:border-slate-500'
+                        ? 'bg-[#B85D36] border-[#B85D36] text-white font-bold text-[8px]'
+                        : 'border-stone-300 bg-white hover:border-stone-400'
                     }`}
                     title="Cycle: Normal -> Proficient -> Expertise"
                   >
@@ -211,18 +209,18 @@ export const AbilitiesSkillsColumn: React.FC<AbilitiesSkillsColumnProps> = ({
 
                   <span
                     onClick={() => onQuickRoll(20, 1, mod, `${s.label} (${s.ability.toUpperCase()}) Check`)}
-                    className="cursor-pointer text-slate-300 group-hover:text-amber-200 truncate max-w-[130px]"
+                    className="cursor-pointer text-stone-800 group-hover:text-stone-950 truncate max-w-[130px]"
                   >
                     {s.label}
                   </span>
-                  <span className="text-[9px] text-slate-500 uppercase font-mono">
+                  <span className="text-[9px] text-stone-600 uppercase font-mono">
                     {s.ability}
                   </span>
                 </div>
 
                 <button
                   onClick={() => onQuickRoll(20, 1, mod, `${s.label} Check`)}
-                  className="font-mono font-bold text-amber-300 hover:text-white tabular-nums px-1.5 py-0.5 rounded bg-slate-950/60 border border-slate-800"
+                  className="font-mono font-semibold text-stone-900 tabular-nums px-2 py-0.5 rounded-md bg-[#FAF8F5] border border-[#E8E3DA] hover:bg-stone-900 hover:text-white transition-colors"
                 >
                   {formatModifier(mod)}
                 </button>
@@ -233,38 +231,38 @@ export const AbilitiesSkillsColumn: React.FC<AbilitiesSkillsColumnProps> = ({
       </div>
 
       {/* Passive Senses & Proficiencies Card */}
-      <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2 text-xs">
-        <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-          <Eye className="w-3.5 h-3.5 text-amber-400" />
+      <div className="p-4 rounded-2xl bg-white border border-[#E5DFD5] space-y-2.5 text-xs shadow-sm">
+        <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-stone-600">
+          <Eye className="w-3.5 h-3.5 text-stone-600" />
           <span>Passive Senses</span>
         </div>
 
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-slate-300">
+          <div className="flex items-center justify-between text-stone-700">
             <span>Passive Perception</span>
-            <span className="font-mono font-bold text-amber-300 tabular-nums">{passivePerception}</span>
+            <span className="font-mono font-semibold text-stone-900 tabular-nums">{passivePerception}</span>
           </div>
-          <div className="flex items-center justify-between text-slate-300">
+          <div className="flex items-center justify-between text-stone-700">
             <span>Passive Insight</span>
-            <span className="font-mono font-bold text-amber-300 tabular-nums">{passiveInsight}</span>
+            <span className="font-mono font-semibold text-stone-900 tabular-nums">{passiveInsight}</span>
           </div>
-          <div className="flex items-center justify-between text-slate-300">
+          <div className="flex items-center justify-between text-stone-700">
             <span>Passive Investigation</span>
-            <span className="font-mono font-bold text-amber-300 tabular-nums">{passiveInvestigation}</span>
+            <span className="font-mono font-semibold text-stone-900 tabular-nums">{passiveInvestigation}</span>
           </div>
         </div>
 
-        <div className="pt-2 border-t border-slate-800 text-[11px] text-slate-400 space-y-1">
+        <div className="pt-2 border-t border-[#F0EBE1] text-[11px] text-stone-600 space-y-1">
           <div>
-            <span className="text-slate-500 font-semibold">Languages: </span>
+            <span className="text-stone-700 font-medium">Languages: </span>
             <span>{character.languages?.join(', ') || 'Common'}</span>
           </div>
           <div>
-            <span className="text-slate-500 font-semibold">Armor: </span>
+            <span className="text-stone-700 font-medium">Armor: </span>
             <span>{character.armorProficiencies?.join(', ') || 'None'}</span>
           </div>
           <div>
-            <span className="text-slate-500 font-semibold">Weapons: </span>
+            <span className="text-stone-700 font-medium">Weapons: </span>
             <span>{character.weaponProficiencies?.join(', ') || 'None'}</span>
           </div>
         </div>

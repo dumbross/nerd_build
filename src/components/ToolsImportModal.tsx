@@ -85,7 +85,7 @@ export const ToolsImportModal: React.FC<ToolsImportModalProps> = ({
 
         setImportStatus({
           type: 'success',
-          message: `Successfully integrated ${addedCount} 5e.tools spell(s) into ${activeCharacter.name}'s grimoire!`,
+          message: `Integrated ${addedCount} 5e.tools spell(s) into ${activeCharacter.name}'s grimoire!`,
         });
         return;
       }
@@ -98,14 +98,14 @@ export const ToolsImportModal: React.FC<ToolsImportModalProps> = ({
 
         items.forEach((it: any) => {
           newWeapons.push({
-            id: `w_import_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+            id: `w_import_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
             name: it.name,
-            category: it.weaponCategory ? 'Martial Melee' : 'Simple Melee',
+            category: (it.weaponCategory || 'Simple Melee') as any,
             damage: it.dmg1 || '1d6',
-            damageType: it.dmgType || 'slashing',
-            properties: it.property || [],
+            damageType: it.dmgType === 'S' ? 'slashing' : it.dmgType === 'P' ? 'piercing' : 'bludgeoning',
             weight: it.weight || 2,
-            cost: `${(it.value || 100) / 100} gp`,
+            cost: it.value ? `${it.value / 100} gp` : '10 gp',
+            properties: it.property || [],
             equipped: true,
           });
           addedWeapons++;
@@ -119,35 +119,32 @@ export const ToolsImportModal: React.FC<ToolsImportModalProps> = ({
 
         setImportStatus({
           type: 'success',
-          message: `Successfully integrated ${addedWeapons} 5e.tools item(s) into ${activeCharacter.name}'s equipment!`,
+          message: `Added ${addedWeapons} 5e.tools item(s) to ${activeCharacter.name}'s armory!`,
         });
         return;
       }
 
-      // Check if it's a 5e.tools race or background or class feature
-      if (parsed.entries || parsed.feature) {
-        const featureName = parsed.name || parsed.feature?.name || 'Imported 5e.tools Feature';
-        const featureDesc = parsed.entries
-          ? render5eToolsEntries(parsed.entries)
-          : render5eToolsEntries(parsed.feature?.entries);
+      // Check if it's a class or race feature
+      if (parsed.name && (parsed.entries || parsed.entry)) {
+        const featureName = parsed.name;
+        const featureDesc = render5eToolsEntries(parsed.entries || parsed.entry);
+
+        const newFeat = {
+          id: `feat_import_${Date.now()}`,
+          name: featureName,
+          source: 'Custom' as const,
+          description: clean5eToolsText(featureDesc),
+        };
 
         onUpdateCharacter({
           ...activeCharacter,
-          features: [
-            ...(activeCharacter.features || []),
-            {
-              id: `f_import_${Date.now()}`,
-              name: featureName,
-              source: 'Custom',
-              description: clean5eToolsText(featureDesc),
-            },
-          ],
+          features: [...(activeCharacter.features || []), newFeat],
           updatedAt: new Date().toISOString(),
         });
 
         setImportStatus({
           type: 'success',
-          message: `Successfully added feature "${featureName}" to ${activeCharacter.name}!`,
+          message: `Added feature "${featureName}" to ${activeCharacter.name}!`,
         });
         return;
       }
@@ -195,26 +192,26 @@ export const ToolsImportModal: React.FC<ToolsImportModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="bg-white border border-[#E5DFD5] rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/80">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E8E3DA] bg-[#FBF9F5]">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400">
-              <Upload className="w-5 h-5" />
+            <div className="w-8 h-8 rounded-lg bg-white border border-[#DDD5C7] flex items-center justify-center text-[#B85D36] shadow-sm">
+              <Upload className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-serif text-lg font-bold text-slate-100">
+              <h3 className="font-serif text-lg font-semibold text-stone-900">
                 5e.tools Data Integration & Importer
               </h3>
-              <p className="text-xs text-slate-400">
-                Seamlessly import 5e.tools spells, items, features, or character JSON
+              <p className="text-xs text-stone-600">
+                Import 5e.tools spells, items, features, or character JSON
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -223,18 +220,18 @@ export const ToolsImportModal: React.FC<ToolsImportModalProps> = ({
         {/* Content */}
         <div className="p-6 space-y-4">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-400 font-medium">
+            <span className="text-stone-600 font-medium">
               Paste 5e.tools JSON or upload a `.json` file:
             </span>
             <div className="flex items-center gap-2">
               <button
                 onClick={handleSample5eSpell}
-                className="text-amber-400 hover:underline flex items-center gap-1 text-[11px]"
+                className="text-[#B85D36] hover:underline flex items-center gap-1 text-[11px] font-medium"
               >
                 <Sparkles className="w-3 h-3" />
-                <span>Load Sample 5e.tools Spell</span>
+                <span>Load Sample Spell</span>
               </button>
-              <label className="cursor-pointer text-slate-300 hover:text-white flex items-center gap-1 text-[11px] bg-slate-800 px-2 py-1 rounded border border-slate-700">
+              <label className="cursor-pointer text-stone-700 hover:text-stone-900 flex items-center gap-1 text-[11px] bg-white px-2.5 py-1 rounded-lg border border-[#DDD5C7] shadow-sm">
                 <FileCode className="w-3 h-3" />
                 <span>Upload JSON</span>
                 <input
@@ -251,40 +248,40 @@ export const ToolsImportModal: React.FC<ToolsImportModalProps> = ({
             value={jsonText}
             onChange={(e) => setJsonText(e.target.value)}
             placeholder='Paste 5e.tools JSON here (e.g. {"name": "...", "entries": [...], ...})'
-            className="w-full h-56 p-3 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500/60 leading-relaxed resize-none"
+            className="w-full h-56 p-3 bg-[#FAF8F5] border border-[#E5DFD5] rounded-xl text-xs font-mono text-stone-900 placeholder-stone-600 focus:outline-none focus:border-stone-400 leading-relaxed resize-none"
           />
 
           {importStatus && (
             <div
-              className={`p-3 rounded-lg text-xs flex items-center gap-2 ${
+              className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
                 importStatus.type === 'success'
-                  ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300'
-                  : 'bg-rose-500/10 border border-rose-500/30 text-rose-300'
+                  ? 'bg-emerald-50 border border-emerald-200 text-[#2E4A3E]'
+                  : 'bg-rose-50 border border-rose-200 text-rose-700'
               }`}
             >
               {importStatus.type === 'success' ? (
-                <CheckCircle className="w-4 h-4 shrink-0 text-emerald-400" />
+                <CheckCircle className="w-4 h-4 shrink-0 text-[#2E4A3E]" />
               ) : (
-                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-700" />
               )}
               <span>{importStatus.message}</span>
             </div>
           )}
 
-          <div className="flex items-center justify-between pt-2 border-t border-slate-800">
-            <div className="text-[11px] text-slate-500">
-              Target Hero: <span className="font-semibold text-slate-300">{activeCharacter.name}</span>
+          <div className="flex items-center justify-between pt-2 border-t border-[#E8E3DA]">
+            <div className="text-[11px] text-stone-600">
+              Target Hero: <span className="font-semibold text-stone-900">{activeCharacter.name}</span>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={onClose}
-                className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white transition-colors"
+                className="px-4 py-2 text-xs font-medium text-stone-600 hover:text-stone-900 transition-colors"
               >
                 Close
               </button>
               <button
                 onClick={handleProcessJson}
-                className="px-5 py-2 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-450 text-slate-950 transition-colors flex items-center gap-2"
+                className="px-5 py-2 text-xs font-semibold rounded-xl bg-stone-900 hover:bg-stone-800 text-white transition-all shadow-sm flex items-center gap-2"
               >
                 <Upload className="w-4 h-4" />
                 <span>Process & Integrate Data</span>

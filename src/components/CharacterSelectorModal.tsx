@@ -41,26 +41,26 @@ export const CharacterSelectorModal: React.FC<CharacterSelectorModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="bg-white border border-[#E5DFD5] rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/80">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E8E3DA] bg-[#FBF9F5]">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400">
-              <Shield className="w-5 h-5" />
+            <div className="w-8 h-8 rounded-lg bg-white border border-[#DDD5C7] flex items-center justify-center text-[#B85D36] shadow-sm">
+              <Shield className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-serif text-lg font-bold text-slate-100">
+              <h3 className="font-serif text-lg font-semibold text-stone-900">
                 Manage Characters
               </h3>
-              <p className="text-xs text-slate-400">
-                Switch heroes, create new adventurers, or export 5e JSON backup
+              <p className="text-xs text-stone-600">
+                Switch hero dossiers, duplicate, or export JSON backups
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -75,8 +75,8 @@ export const CharacterSelectorModal: React.FC<CharacterSelectorModalProps> = ({
                 key={char.id}
                 className={`p-4 rounded-xl border transition-all flex items-center justify-between gap-4 ${
                   isActive
-                    ? 'bg-amber-500/10 border-amber-500/50 shadow-sm shadow-amber-500/10'
-                    : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-800/40'
+                    ? 'bg-white border-stone-900 ring-1 ring-stone-900/10 shadow-sm'
+                    : 'bg-[#FAF8F5] border-[#E8E3DA] hover:border-stone-400 hover:bg-[#F5F1EB]'
                 }`}
               >
                 <div
@@ -87,25 +87,25 @@ export const CharacterSelectorModal: React.FC<CharacterSelectorModalProps> = ({
                   className="cursor-pointer flex-1"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="font-serif font-bold text-base text-slate-100 hover:text-amber-300 transition-colors">
+                    <span className="font-serif font-semibold text-base text-stone-900 hover:text-[#B85D36] transition-colors">
                       {char.name}
                     </span>
                     {isActive && (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-stone-900 text-white flex items-center gap-1 shadow-sm">
                         <Check className="w-2.5 h-2.5" /> Active
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
+                  <div className="text-xs text-stone-600 mt-1 flex items-center gap-2 flex-wrap">
                     <span>
                       Level {char.level} {char.className} {char.subclass ? `(${char.subclass})` : ''}
                     </span>
-                    <span>·</span>
+                    <span className="text-stone-300">·</span>
                     <span>{char.race}</span>
-                    <span>·</span>
+                    <span className="text-stone-300">·</span>
                     <span>{char.background}</span>
-                    <span>·</span>
-                    <span className="text-emerald-400 font-mono">HP: {char.hpCurrent}/{char.hpMax}</span>
+                    <span className="text-stone-300">·</span>
+                    <span className="text-[#2E4A3E] font-mono font-medium">HP {char.hpCurrent}/{char.hpMax}</span>
                   </div>
                 </div>
 
@@ -113,7 +113,7 @@ export const CharacterSelectorModal: React.FC<CharacterSelectorModalProps> = ({
                   <button
                     onClick={() => handleExportJson(char)}
                     aria-label="Export Character to JSON"
-                    className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                    className="p-2 rounded-lg bg-white hover:bg-stone-100 text-stone-700 border border-[#DDD5C7] shadow-sm transition-colors"
                     title="Export Character JSON"
                   >
                     <Download className="w-4 h-4" />
@@ -121,7 +121,7 @@ export const CharacterSelectorModal: React.FC<CharacterSelectorModalProps> = ({
                   <button
                     onClick={() => onCloneCharacter(char)}
                     aria-label="Clone Character"
-                    className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                    className="p-2 rounded-lg bg-white hover:bg-stone-100 text-stone-700 border border-[#DDD5C7] shadow-sm transition-colors"
                     title="Duplicate Hero"
                   >
                     <Copy className="w-4 h-4" />
@@ -130,7 +130,7 @@ export const CharacterSelectorModal: React.FC<CharacterSelectorModalProps> = ({
                     <button
                       onClick={() => onDeleteCharacter(char.id)}
                       aria-label="Delete Character"
-                      className="p-2 rounded-lg bg-slate-800 hover:bg-rose-900/60 text-slate-400 hover:text-rose-300 transition-colors"
+                      className="p-2 rounded-lg bg-white hover:bg-stone-100 text-stone-500 hover:text-stone-900 border border-[#DDD5C7] shadow-sm transition-colors"
                       title="Delete Hero"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -143,8 +143,8 @@ export const CharacterSelectorModal: React.FC<CharacterSelectorModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between">
-          <div className="text-xs text-slate-500">
+        <div className="px-6 py-4 border-t border-[#E8E3DA] bg-[#FBF9F5] flex items-center justify-between">
+          <div className="text-xs text-stone-600">
             {characters.length} character{characters.length > 1 ? 's' : ''} stored locally
           </div>
           <button
@@ -152,7 +152,7 @@ export const CharacterSelectorModal: React.FC<CharacterSelectorModalProps> = ({
               onCreateNew();
               onClose();
             }}
-            className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-450 text-slate-950 font-semibold text-xs flex items-center gap-2 transition-colors"
+            className="px-4 py-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-white font-medium text-xs flex items-center gap-2 shadow-sm transition-all"
           >
             <Plus className="w-4 h-4" />
             <span>Create New Hero</span>

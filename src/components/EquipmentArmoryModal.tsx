@@ -15,7 +15,6 @@ import {
   FlaskConical,
   Plus,
   Check,
-  Coins,
 } from 'lucide-react';
 import { FIVE_TOOLS_WEAPONS, FIVE_TOOLS_ARMOR, FIVE_TOOLS_STANDARD_GEAR } from '../data/equipment';
 import { WeaponItem, ArmorItem, GearItem, Character } from '../types/character';
@@ -43,7 +42,7 @@ export const EquipmentArmoryModal: React.FC<EquipmentArmoryModalProps> = ({
   if (!isOpen) return null;
 
   const showNotice = (name: string) => {
-    setAddedItemNotice(`Added ${name} to inventory!`);
+    setAddedItemNotice(`Added ${name} to inventory`);
     setTimeout(() => setAddedItemNotice(null), 2500);
   };
 
@@ -106,15 +105,14 @@ export const EquipmentArmoryModal: React.FC<EquipmentArmoryModalProps> = ({
     showNotice(gear.name);
   };
 
-  // Filtered lists
   const filteredWeapons = useMemo(() => {
     return FIVE_TOOLS_WEAPONS.filter((w) => {
       const matchSearch =
         w.name.toLowerCase().includes(search.toLowerCase()) ||
         w.category.toLowerCase().includes(search.toLowerCase()) ||
-        w.properties?.some((p) => p.toLowerCase().includes(search.toLowerCase()));
+        w.damageType.toLowerCase().includes(search.toLowerCase());
       if (!matchSearch) return false;
-      if (filterCategory !== 'all' && !w.category.toLowerCase().includes(filterCategory.toLowerCase())) return false;
+      if (filterCategory !== 'all' && w.category.toLowerCase() !== filterCategory.toLowerCase()) return false;
       return true;
     });
   }, [search, filterCategory]);
@@ -148,22 +146,19 @@ export const EquipmentArmoryModal: React.FC<EquipmentArmoryModalProps> = ({
   }, [search, activeTab]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-slate-900 border border-amber-500/30 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white border border-[#E5DFD5] rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/70">
+        <div className="px-6 py-4 border-b border-[#E8E3DA] flex items-center justify-between bg-[#FBF9F5]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
-              <Swords className="w-5 h-5" />
+            <div className="w-8 h-8 rounded-lg bg-white border border-[#DDD5C7] flex items-center justify-center text-[#B85D36] shadow-sm">
+              <Swords className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="font-serif text-lg font-bold text-slate-100 flex items-center gap-2">
+              <h2 className="font-serif text-lg font-semibold text-stone-900 flex items-center gap-2">
                 <span>5e.tools Armory & Equipment Catalog</span>
-                <span className="text-[10px] font-sans font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  Ready to Select
-                </span>
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-stone-600">
                 Browse weapons, armor, tools, and adventuring gear. Add directly to {character.name || 'Character'}.
               </p>
             </div>
@@ -171,7 +166,7 @@ export const EquipmentArmoryModal: React.FC<EquipmentArmoryModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -179,27 +174,27 @@ export const EquipmentArmoryModal: React.FC<EquipmentArmoryModalProps> = ({
 
         {/* Feedback notice toast */}
         {addedItemNotice && (
-          <div className="bg-emerald-500/20 border-b border-emerald-500/40 px-6 py-2 text-xs font-semibold text-emerald-300 flex items-center gap-2 animate-in fade-in">
-            <Check className="w-4 h-4 text-emerald-400" />
+          <div className="bg-[#FAF8F5] border-b border-[#E8E3DA] px-6 py-2 text-xs font-medium text-[#2E4A3E] flex items-center gap-2 animate-in fade-in">
+            <Check className="w-4 h-4 text-[#2E4A3E]" />
             <span>{addedItemNotice}</span>
           </div>
         )}
 
         {/* Filter & Search Bar */}
-        <div className="px-6 py-3 border-b border-slate-800 bg-slate-900/90 flex flex-col sm:flex-row items-center gap-3">
+        <div className="px-6 py-3 border-b border-[#E8E3DA] bg-[#FAF8F5] flex flex-col sm:flex-row items-center gap-3">
           <div className="relative flex-1 w-full">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-stone-600" />
             <input
               type="text"
               placeholder="Search by name, damage, properties, or description..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
+              className="w-full pl-8 pr-4 py-1.5 bg-white border border-[#E5DFD5] rounded-xl text-xs text-stone-900 placeholder-stone-600 focus:outline-none focus:border-stone-400"
             />
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white text-xs"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-600 hover:text-stone-900 text-xs"
               >
                 ×
               </button>
@@ -207,15 +202,15 @@ export const EquipmentArmoryModal: React.FC<EquipmentArmoryModalProps> = ({
           </div>
 
           {/* Navigation Category Tabs */}
-          <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+          <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 bg-white p-0.5 rounded-xl border border-[#E5DFD5]">
             {[
               { id: 'all', label: 'All Items', icon: Backpack },
               { id: 'weapons', label: 'Weapons', icon: Swords },
-              { id: 'armor', label: 'Armor & Shields', icon: Shield },
-              { id: 'gear', label: 'Gear & Packs', icon: Backpack },
-              { id: 'tools', label: 'Tools & Kits', icon: Wrench },
-              { id: 'consumables', label: 'Potions & Ammo', icon: FlaskConical },
-              { id: 'magic', label: 'Magic Items', icon: Sparkles },
+              { id: 'armor', label: 'Armor', icon: Shield },
+              { id: 'gear', label: 'Gear', icon: Backpack },
+              { id: 'tools', label: 'Tools', icon: Wrench },
+              { id: 'consumables', label: 'Potions', icon: FlaskConical },
+              { id: 'magic', label: 'Magic', icon: Sparkles },
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -226,13 +221,13 @@ export const EquipmentArmoryModal: React.FC<EquipmentArmoryModalProps> = ({
                     setActiveTab(tab.id as TabType);
                     setFilterCategory('all');
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition-colors ${
+                  className={`px-3 py-1 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1.5 transition-all ${
                     isActive
-                      ? 'bg-amber-500 text-slate-950 font-bold'
-                      : 'bg-slate-950/70 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                      ? 'bg-stone-900 text-white font-semibold shadow-sm'
+                      : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5" />
+                  <Icon className="w-3 h-3" />
                   <span>{tab.label}</span>
                 </button>
               );
@@ -245,73 +240,55 @@ export const EquipmentArmoryModal: React.FC<EquipmentArmoryModalProps> = ({
           {/* WEAPONS SECTION */}
           {(activeTab === 'all' || activeTab === 'weapons') && filteredWeapons.length > 0 && (
             <div className="space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-2">
-                  <Swords className="w-4 h-4" />
+              <div className="flex items-center justify-between border-b border-[#E8E3DA] pb-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-700 flex items-center gap-2">
+                  <Swords className="w-4 h-4 text-stone-600" />
                   <span>Weapons ({filteredWeapons.length})</span>
                 </h3>
-                {activeTab === 'weapons' && (
-                  <div className="flex items-center gap-1 text-[11px]">
-                    {['all', 'simple', 'martial', 'ranged'].map((cat) => (
-                      <button
-                        key={cat}
-                        onClick={() => setFilterCategory(cat)}
-                        className={`px-2 py-0.5 rounded capitalize ${
-                          filterCategory === cat
-                            ? 'bg-slate-800 text-amber-300 font-bold'
-                            : 'text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {filteredWeapons.map((w) => (
                   <div
                     key={w.id}
-                    className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-slate-700 flex flex-col justify-between gap-2.5 transition-all"
+                    className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA] hover:border-stone-400 flex flex-col justify-between gap-2 transition-all shadow-sm"
                   >
                     <div>
                       <div className="flex items-start justify-between gap-2">
-                        <span className="font-bold text-slate-100 text-sm">{w.name}</span>
-                        <span className="font-mono text-amber-400 text-xs font-bold whitespace-nowrap">
+                        <span className="font-serif font-semibold text-stone-900 text-sm">{w.name}</span>
+                        <span className="font-mono text-xs font-bold text-stone-900">
                           {w.damage} {w.damageType}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-1 flex-wrap">
-                        <span className="px-1.5 py-0.5 rounded bg-slate-800/80 text-slate-300 text-[10px]">
+                      <div className="flex items-center gap-2 text-[11px] text-stone-600 mt-1">
+                        <span className="px-1.5 py-0.5 rounded bg-white text-stone-700 text-[10px] border border-[#E0D9CE]">
                           {w.category}
                         </span>
-                        {w.range && <span>Range: {w.range}</span>}
-                        {w.weight !== undefined && <span>{w.weight} lbs</span>}
-                        {w.cost && <span className="text-amber-500/90">{w.cost}</span>}
+                        <span>{w.weight} lbs</span>
+                        <span>· {w.cost}</span>
                       </div>
 
                       {w.properties && w.properties.length > 0 && (
-                        <div className="text-[10px] text-slate-400 mt-1.5 italic">
-                          Properties: {w.properties.join(', ')}
+                        <div className="text-[11px] text-stone-600 mt-1.5 italic">
+                          {w.properties.join(', ')}
                         </div>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2 pt-2 border-t border-slate-900">
-                      <button
-                        onClick={() => handleAddWeapon(w, false)}
-                        className="flex-1 py-1 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
-                      >
-                        <Plus className="w-3.5 h-3.5 text-amber-400" />
-                        <span>Add to Pack</span>
-                      </button>
+                    <div className="flex items-center gap-2 pt-2 border-t border-[#E8E3DA]">
                       <button
                         onClick={() => handleAddWeapon(w, true)}
-                        className="py-1 px-3 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-semibold transition-colors"
+                        className="flex-1 py-1 px-3 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium flex items-center justify-center gap-1.5 shadow-sm transition-all"
                       >
-                        Equip
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Equip</span>
+                      </button>
+                      <button
+                        onClick={() => handleAddWeapon(w, false)}
+                        className="py-1 px-3 rounded-lg bg-white hover:bg-stone-100 text-stone-800 border border-[#DDD5C7] text-xs font-medium shadow-sm transition-all"
+                      >
+                        + In Pack
                       </button>
                     </div>
                   </div>
@@ -323,71 +300,52 @@ export const EquipmentArmoryModal: React.FC<EquipmentArmoryModalProps> = ({
           {/* ARMOR SECTION */}
           {(activeTab === 'all' || activeTab === 'armor') && filteredArmor.length > 0 && (
             <div className="space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-2">
-                  <Shield className="w-4 h-4" />
+              <div className="flex items-center justify-between border-b border-[#E8E3DA] pb-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-700 flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-stone-600" />
                   <span>Armor & Shields ({filteredArmor.length})</span>
                 </h3>
-                {activeTab === 'armor' && (
-                  <div className="flex items-center gap-1 text-[11px]">
-                    {['all', 'light', 'medium', 'heavy', 'shield'].map((cat) => (
-                      <button
-                        key={cat}
-                        onClick={() => setFilterCategory(cat)}
-                        className={`px-2 py-0.5 rounded capitalize ${
-                          filterCategory === cat
-                            ? 'bg-slate-800 text-amber-300 font-bold'
-                            : 'text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {filteredArmor.map((a) => (
                   <div
                     key={a.id}
-                    className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-slate-700 flex flex-col justify-between gap-2.5 transition-all"
+                    className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA] hover:border-stone-400 flex flex-col justify-between gap-2 transition-all shadow-sm"
                   >
                     <div>
                       <div className="flex items-start justify-between gap-2">
-                        <span className="font-bold text-slate-100 text-sm">{a.name}</span>
-                        <span className="font-mono text-cyan-400 text-xs font-bold whitespace-nowrap">
+                        <span className="font-serif font-semibold text-stone-900 text-sm">{a.name}</span>
+                        <span className="font-mono text-xs font-bold text-[#2E4A3E]">
                           {a.category === 'Shield' ? `+${a.ac} AC` : `AC ${a.ac}`}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-1 flex-wrap">
-                        <span className="px-1.5 py-0.5 rounded bg-slate-800/80 text-slate-300 text-[10px]">
-                          {a.category} Armor
+                      <div className="flex items-center gap-2 text-[11px] text-stone-600 mt-1">
+                        <span className="px-1.5 py-0.5 rounded bg-white text-stone-700 text-[10px] border border-[#E0D9CE]">
+                          {a.category}
                         </span>
-                        {a.dexBonus === 'full' && <span>+ Dex Mod</span>}
-                        {a.dexBonus === 'max2' && <span>+ Dex Mod (max 2)</span>}
-                        {a.dexBonus === 'none' && <span>No Dex bonus</span>}
-                        {a.minStr && <span>Req STR {a.minStr}</span>}
-                        {a.stealthDisadvantage && <span className="text-rose-400">Stealth Disadv.</span>}
-                        {a.weight !== undefined && <span>{a.weight} lbs</span>}
-                        {a.cost && <span className="text-amber-500/90">{a.cost}</span>}
+                        <span>{a.weight} lbs</span>
+                        <span>· {a.cost}</span>
+                        {a.stealthDisadvantage && (
+                          <span className="text-rose-700">· Stealth Disadv</span>
+                        )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 pt-2 border-t border-slate-900">
-                      <button
-                        onClick={() => handleAddArmor(a, false)}
-                        className="flex-1 py-1 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
-                      >
-                        <Plus className="w-3.5 h-3.5 text-amber-400" />
-                        <span>Add to Pack</span>
-                      </button>
+                    <div className="flex items-center gap-2 pt-2 border-t border-[#E8E3DA]">
                       <button
                         onClick={() => handleAddArmor(a, true)}
-                        className="py-1 px-3 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-semibold transition-colors"
+                        className="flex-1 py-1 px-3 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium flex items-center justify-center gap-1.5 shadow-sm transition-all"
                       >
-                        Equip
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Equip</span>
+                      </button>
+                      <button
+                        onClick={() => handleAddArmor(a, false)}
+                        className="py-1 px-3 rounded-lg bg-white hover:bg-stone-100 text-stone-800 border border-[#DDD5C7] text-xs font-medium shadow-sm transition-all"
+                      >
+                        + In Pack
                       </button>
                     </div>
                   </div>
@@ -404,16 +362,16 @@ export const EquipmentArmoryModal: React.FC<EquipmentArmoryModalProps> = ({
             activeTab === 'magic') &&
             filteredGear.length > 0 && (
               <div className="space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-2">
-                    <Backpack className="w-4 h-4" />
+                <div className="flex items-center justify-between border-b border-[#E8E3DA] pb-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-700 flex items-center gap-2">
+                    <Backpack className="w-4 h-4 text-stone-600" />
                     <span>
                       {activeTab === 'tools'
                         ? 'Tools, Kits & Artisan Supplies'
                         : activeTab === 'magic'
-                        ? 'Magic Items & Wondrous Artifacts'
+                        ? 'Magic Items'
                         : activeTab === 'consumables'
-                        ? 'Potions, Flasks & Ammunition'
+                        ? 'Potions & Ammunition'
                         : 'Adventuring Gear & Equipment'}{' '}
                       ({filteredGear.length})
                     </span>
@@ -424,16 +382,16 @@ export const EquipmentArmoryModal: React.FC<EquipmentArmoryModalProps> = ({
                   {filteredGear.map((g) => (
                     <div
                       key={g.id}
-                      className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-slate-700 flex flex-col justify-between gap-2 transition-all"
+                      className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA] hover:border-stone-400 flex flex-col justify-between gap-2 transition-all shadow-sm"
                     >
                       <div>
                         <div className="flex items-start justify-between gap-2">
-                          <span className="font-bold text-slate-100 text-sm">{g.name}</span>
-                          <span className="text-[11px] font-mono text-amber-400">{g.cost || '—'}</span>
+                          <span className="font-serif font-semibold text-stone-900 text-sm">{g.name}</span>
+                          <span className="text-[11px] font-mono text-stone-700">{g.cost || '—'}</span>
                         </div>
 
-                        <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-1">
-                          <span className="px-1.5 py-0.5 rounded bg-slate-800/80 text-slate-300 text-[10px]">
+                        <div className="flex items-center gap-2 text-[11px] text-stone-600 mt-1">
+                          <span className="px-1.5 py-0.5 rounded bg-white text-stone-700 text-[10px] border border-[#E0D9CE]">
                             {g.category || 'Gear'}
                           </span>
                           <span>{g.weight} lbs</span>
@@ -441,18 +399,18 @@ export const EquipmentArmoryModal: React.FC<EquipmentArmoryModalProps> = ({
                         </div>
 
                         {g.description && (
-                          <div className="text-[11px] text-slate-400 mt-2 leading-relaxed">
+                          <div className="text-[11px] text-stone-600 mt-2 leading-relaxed">
                             {g.description}
                           </div>
                         )}
                       </div>
 
-                      <div className="pt-2 border-t border-slate-900">
+                      <div className="pt-2 border-t border-[#E8E3DA]">
                         <button
                           onClick={() => handleAddGear(g)}
-                          className="w-full py-1 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                          className="w-full py-1.5 px-3 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium flex items-center justify-center gap-1.5 shadow-sm transition-all"
                         >
-                          <Plus className="w-3.5 h-3.5 text-amber-400" />
+                          <Plus className="w-3.5 h-3.5" />
                           <span>Add to Inventory</span>
                         </button>
                       </div>
@@ -464,10 +422,10 @@ export const EquipmentArmoryModal: React.FC<EquipmentArmoryModalProps> = ({
 
           {/* Empty state */}
           {filteredWeapons.length === 0 && filteredArmor.length === 0 && filteredGear.length === 0 && (
-            <div className="text-center py-12 text-slate-400 space-y-2">
-              <Search className="w-8 h-8 text-slate-600 mx-auto" />
+            <div className="text-center py-12 text-stone-600 space-y-2">
+              <Search className="w-8 h-8 text-stone-400 mx-auto" />
               <p className="text-sm font-semibold">No equipment matching "{search}"</p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-stone-600">
                 Try searching for a different weapon, armor type, tool, or potion.
               </p>
             </div>
@@ -475,17 +433,17 @@ export const EquipmentArmoryModal: React.FC<EquipmentArmoryModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 border-t border-slate-800 bg-slate-950/70 flex items-center justify-between text-xs text-slate-400">
+        <div className="px-6 py-3.5 border-t border-[#E8E3DA] bg-[#FBF9F5] flex items-center justify-between text-xs text-stone-600">
           <div>
             Total items in 5e.tools armory:{' '}
-            <span className="text-amber-300 font-semibold">
+            <span className="font-semibold text-stone-900">
               {FIVE_TOOLS_WEAPONS.length + FIVE_TOOLS_ARMOR.length + FIVE_TOOLS_STANDARD_GEAR.length}
             </span>
           </div>
 
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-450 text-slate-950 font-bold text-xs transition-colors"
+            className="px-4 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white font-medium text-xs transition-all shadow-sm"
           >
             Done
           </button>

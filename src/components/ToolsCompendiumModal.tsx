@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { X, Search, Sparkles, BookOpen, Shield, Swords, Plus, Check, Lock, AlertTriangle } from 'lucide-react';
+import { X, Search, Sparkles, BookOpen, Shield, Swords, Plus, Check } from 'lucide-react';
 import { FIVE_TOOLS_SPELLS } from '../data/spells';
 import { FIVE_TOOLS_CLASSES } from '../data/classes';
 import { FIVE_TOOLS_RACES } from '../data/races';
@@ -41,7 +41,11 @@ export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
 
     if (activeCategory === 'spells') {
       return FIVE_TOOLS_SPELLS.filter((spell) => {
-        const matchesQuery = !q || spell.name.toLowerCase().includes(q) || spell.school.toLowerCase().includes(q) || spell.classes.some((c) => c.toLowerCase().includes(q));
+        const matchesQuery =
+          !q ||
+          spell.name.toLowerCase().includes(q) ||
+          spell.school.toLowerCase().includes(q) ||
+          spell.classes.some((c) => c.toLowerCase().includes(q));
         const matchesLevel = spellLevelFilter === 'all' || spell.level.toString() === spellLevelFilter;
         return matchesQuery && matchesLevel;
       });
@@ -52,7 +56,9 @@ export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
     }
 
     if (activeCategory === 'races') {
-      return FIVE_TOOLS_RACES.filter((r) => !q || r.name.toLowerCase().includes(q) || r.subraces?.some((sr) => sr.name.toLowerCase().includes(q)));
+      return FIVE_TOOLS_RACES.filter(
+        (r) => !q || r.name.toLowerCase().includes(q) || r.subraces?.some((sr) => sr.name.toLowerCase().includes(q))
+      );
     }
 
     if (activeCategory === 'backgrounds') {
@@ -69,7 +75,9 @@ export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
         ...FIVE_TOOLS_ARMOR.map((a) => ({ ...a, eqType: 'Armor' })),
         ...FIVE_TOOLS_STANDARD_GEAR.map((g) => ({ ...g, eqType: 'Gear' })),
       ];
-      return allEq.filter((e) => !q || e.name.toLowerCase().includes(q) || (e.category && e.category.toLowerCase().includes(q)));
+      return allEq.filter(
+        (e) => !q || e.name.toLowerCase().includes(q) || (e.category && e.category.toLowerCase().includes(q))
+      );
     }
 
     return [];
@@ -79,7 +87,7 @@ export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
 
   const handleAddSpellToCharacter = (spell: Spell) => {
     if (activeCharacter.spells?.some((s) => s.id === spell.id)) {
-      setAddedNotification(`Spell "${spell.name}" is already known!`);
+      setAddedNotification(`Spell "${spell.name}" is already known`);
       setTimeout(() => setAddedNotification(null), 2500);
       return;
     }
@@ -89,7 +97,7 @@ export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
 
     if (!eligibility.eligible && eligibility.isHigherLevel) {
       setAddedNotification(
-        `⚠️ Level ${activeCharacter.level} ${activeCharacter.className} cannot cast Level ${spell.level} spells (Max: Level ${maxSpellLevel})!`
+        `Notice: Level ${activeCharacter.level} ${activeCharacter.className} max spell level is ${maxSpellLevel}`
       );
       setTimeout(() => setAddedNotification(null), 3500);
       return;
@@ -101,10 +109,9 @@ export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
       updatedAt: new Date().toISOString(),
     };
     onUpdateCharacter(updated);
-    setAddedNotification(`Added "${spell.name}" to ${activeCharacter.name}'s spells!`);
+    setAddedNotification(`Added "${spell.name}" to Grimoire`);
     setTimeout(() => setAddedNotification(null), 2500);
   };
-
 
   const handleAddWeaponToCharacter = (weapon: WeaponItem) => {
     const updated = {
@@ -113,7 +120,7 @@ export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
       updatedAt: new Date().toISOString(),
     };
     onUpdateCharacter(updated);
-    setAddedNotification(`Equipped "${weapon.name}" on ${activeCharacter.name}!`);
+    setAddedNotification(`Equipped "${weapon.name}" on ${activeCharacter.name}`);
     setTimeout(() => setAddedNotification(null), 2500);
   };
 
@@ -124,38 +131,38 @@ export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
       updatedAt: new Date().toISOString(),
     };
     onUpdateCharacter(updated);
-    setAddedNotification(`Equipped "${armor.name}" on ${activeCharacter.name}!`);
+    setAddedNotification(`Equipped "${armor.name}" on ${activeCharacter.name}`);
     setTimeout(() => setAddedNotification(null), 2500);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-5xl w-full h-[85vh] shadow-2xl overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-stone-900/40 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="bg-white border border-[#E5DFD5] rounded-2xl max-w-5xl w-full h-[85vh] shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/80">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E8E3DA] bg-[#FBF9F5]">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400">
-              <BookOpen className="w-5 h-5" />
+            <div className="w-8 h-8 rounded-lg bg-white border border-[#DDD5C7] flex items-center justify-center text-[#B85D36] shadow-sm">
+              <BookOpen className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-serif text-lg font-bold text-slate-100 flex items-center gap-2">
+              <h3 className="font-serif text-lg font-semibold text-stone-900 flex items-center gap-2">
                 5e.tools Data Compendium
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-stone-600">
                 Official SRD 5.1 & 5e.tools dataset reference and direct integration
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Subheader: Category Tabs */}
-        <div className="flex items-center gap-1 px-6 py-2.5 bg-slate-950/40 border-b border-slate-800/80 overflow-x-auto">
+        <div className="flex items-center gap-1 px-6 py-2.5 bg-[#FAF8F5] border-b border-[#E8E3DA] overflow-x-auto">
           {[
             { id: 'spells', label: 'Spells', icon: Sparkles },
             { id: 'classes', label: 'Classes & Subclasses', icon: Swords },
@@ -172,10 +179,10 @@ export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
                   setActiveCategory(cat.id as CompendiumCategory);
                   setSelectedItem(null);
                 }}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
                   activeCategory === cat.id
-                    ? 'bg-amber-500/15 text-amber-300 font-semibold border border-amber-500/30'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                    ? 'bg-stone-900 text-white font-semibold shadow-sm'
+                    : 'text-stone-600 hover:text-stone-900'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -186,25 +193,25 @@ export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
         </div>
 
         {/* Search & Filter Bar */}
-        <div className="px-6 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-900/60">
+        <div className="px-6 py-3 border-b border-[#E8E3DA] flex flex-wrap items-center justify-between gap-3 bg-white">
           <div className="relative flex-1 min-w-[240px]">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-stone-600 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder={`Search ${activeCategory}...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-950 border border-slate-800 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-[#FAF8F5] border border-[#E5DFD5] rounded-xl text-stone-900 placeholder-stone-600 focus:outline-none focus:border-stone-400"
             />
           </div>
 
           {activeCategory === 'spells' && (
             <div className="flex items-center gap-2 text-xs">
-              <span className="text-slate-400">Level:</span>
+              <span className="text-stone-600">Level:</span>
               <select
                 value={spellLevelFilter}
                 onChange={(e) => setSpellLevelFilter(e.target.value)}
-                className="bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-slate-200 text-xs focus:outline-none focus:border-amber-500/50"
+                className="bg-[#FAF8F5] border border-[#E5DFD5] rounded-lg px-2.5 py-1 text-stone-900 text-xs focus:outline-none"
               >
                 <option value="all">All Levels</option>
                 <option value="0">Cantrip (0)</option>
@@ -221,9 +228,8 @@ export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
             </div>
           )}
 
-
           {addedNotification && (
-            <div className="text-xs font-medium text-emerald-400 flex items-center gap-1.5 animate-in fade-in">
+            <div className="text-xs font-medium text-[#2E4A3E] flex items-center gap-1.5 animate-in fade-in">
               <Check className="w-3.5 h-3.5" />
               <span>{addedNotification}</span>
             </div>
@@ -233,9 +239,9 @@ export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
         {/* Master / Detail Split View */}
         <div className="flex-1 grid grid-cols-1 md:grid-cols-12 overflow-hidden">
           {/* List Column */}
-          <div className="md:col-span-5 border-r border-slate-800 overflow-y-auto divide-y divide-slate-800/60">
+          <div className="md:col-span-5 border-r border-[#E8E3DA] overflow-y-auto divide-y divide-[#F0EBE1]">
             {filteredItems.length === 0 ? (
-              <div className="p-8 text-center text-xs text-slate-500">
+              <div className="p-8 text-center text-xs text-stone-600">
                 No entries found matching "{searchQuery}".
               </div>
             ) : (
@@ -245,171 +251,156 @@ export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
                   <button
                     key={item.id || item.name}
                     onClick={() => setSelectedItem(item)}
-                    className={`w-full text-left p-3.5 transition-colors flex items-center justify-between group ${
+                    className={`w-full text-left p-4 transition-all flex items-center justify-between group ${
                       isSelected
-                        ? 'bg-amber-500/10 border-l-2 border-l-amber-500 text-slate-100'
-                        : 'hover:bg-slate-800/40 text-slate-300'
+                        ? 'bg-[#FAF8F5] border-l-2 border-l-[#B85D36] text-stone-900'
+                        : 'hover:bg-[#FAF8F5] text-stone-800'
                     }`}
                   >
                     <div>
-                      <div className="font-medium text-xs group-hover:text-amber-300 transition-colors">
+                      <div className="font-serif font-semibold text-sm text-stone-900">
                         {item.name}
                       </div>
-                      <div className="text-[11px] text-slate-500">
-                        {item.school && `${item.level === 0 ? 'Cantrip' : `Level ${item.level}`} · ${item.school}`}
+                      <div className="text-[11px] text-stone-600 mt-0.5">
+                        {item.school && `${item.school} · ${item.level === 0 ? 'Cantrip' : `Lvl ${item.level}`}`}
                         {item.hd && `Hit Die: d${item.hd.faces}`}
-                        {item.size && `Size: ${item.size.join(', ')} · Speed ${item.speed} ft`}
-                        {item.damage && `${item.damage} ${item.damageType || ''} · ${item.category || ''}`}
-                        {item.ac && `AC ${item.ac} · ${item.category || ''}`}
-                        {item.source && ` [${item.source}]`}
+                        {item.speed && `Speed: ${item.speed} ft`}
+                        {item.category && `${item.category}`}
+                        {item.damage && ` · ${item.damage} ${item.damageType || ''}`}
                       </div>
                     </div>
-
-                    {activeCategory === 'spells' && item.level > getMaxSpellLevel(activeCharacter.className, activeCharacter.level) && (
-                      <span className="text-[10px] text-rose-400 flex items-center gap-1 shrink-0 px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20">
-                        <Lock className="w-2.5 h-2.5" />
-                        <span>Lvl {item.level}</span>
-                      </span>
-                    )}
                   </button>
-
                 );
               })
             )}
           </div>
 
-          {/* Detail Column */}
-          <div className="md:col-span-7 p-6 overflow-y-auto bg-slate-950/40">
+          {/* Details Column */}
+          <div className="md:col-span-7 overflow-y-auto p-6 bg-[#FAF8F5]">
             {(() => {
               const item = selectedItem || filteredItems[0];
               if (!item) {
                 return (
-                  <div className="h-full flex items-center justify-center text-xs text-slate-500">
-                    Select an entry from the list to view its 5e.tools rules description.
+                  <div className="h-full flex items-center justify-center text-xs text-stone-600">
+                    Select an entry to view complete 5e rules and lore.
                   </div>
                 );
               }
 
               return (
                 <div className="space-y-4">
-                  {/* Item Header */}
-                  <div className="flex items-start justify-between gap-4 border-b border-slate-800 pb-3">
+                  <div className="flex items-start justify-between gap-4 border-b border-[#E8E3DA] pb-3">
                     <div>
-                      <h4 className="font-serif text-xl font-bold text-amber-100">
+                      <h4 className="font-serif text-2xl font-semibold text-stone-900">
                         {item.name}
                       </h4>
-                      <div className="text-xs text-slate-400 mt-0.5">
-                        {item.source && `Source: 5e.tools (${item.source}${item.page ? ` p.${item.page}` : ''})`}
+                      <div className="text-xs text-stone-600 mt-1 flex items-center gap-2 flex-wrap">
+                        {item.school && <span>{item.school} (Level {item.level})</span>}
+                        {item.hd && <span>Hit Die: d{item.hd.faces}</span>}
+                        {item.category && <span>{item.category}</span>}
+                        {item.source && <span>· Source: {item.source}</span>}
                       </div>
                     </div>
 
-                    {/* Action buttons depending on type */}
-                    {activeCategory === 'spells' && (() => {
-                      const maxLvl = getMaxSpellLevel(activeCharacter.className, activeCharacter.level);
-                      const isLocked = item.level > maxLvl;
-                      return (
+                    {/* Quick Add Actions */}
+                    <div className="flex items-center gap-2">
+                      {activeCategory === 'spells' && (
                         <button
                           onClick={() => handleAddSpellToCharacter(item)}
-                          disabled={isLocked}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0 ${
-                            isLocked
-                              ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700/80'
-                              : 'bg-amber-500 hover:bg-amber-450 text-slate-950 cursor-pointer'
-                          }`}
+                          className="px-3.5 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all"
                         >
-                          {isLocked ? <Lock className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-                          <span>{isLocked ? `Locked (Max: Lvl ${maxLvl})` : `Add Spell to ${activeCharacter.name}`}</span>
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Add to Grimoire</span>
                         </button>
-                      );
-                    })()}
+                      )}
 
+                      {activeCategory === 'equipment' && item.damage && (
+                        <button
+                          onClick={() => handleAddWeaponToCharacter(item)}
+                          className="px-3.5 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Equip Weapon</span>
+                        </button>
+                      )}
 
-                    {activeCategory === 'equipment' && item.damage && (
-                      <button
-                        onClick={() => handleAddWeaponToCharacter(item)}
-                        className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-450 text-slate-950 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Equip Weapon</span>
-                      </button>
-                    )}
-
-                    {activeCategory === 'equipment' && item.ac && (
-                      <button
-                        onClick={() => handleAddArmorToCharacter(item)}
-                        className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-450 text-slate-950 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Equip Armor</span>
-                      </button>
-                    )}
+                      {activeCategory === 'equipment' && item.ac && (
+                        <button
+                          onClick={() => handleAddArmorToCharacter(item)}
+                          className="px-3.5 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Equip Armor</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Metadata Chips / Stats */}
+                  {/* Vitals summary cards */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                     {item.castingTime && (
-                      <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                        <span className="text-[10px] text-slate-500 block uppercase">Casting Time</span>
-                        <span className="font-medium text-slate-200">{item.castingTime}</span>
+                      <div className="p-2.5 rounded-xl bg-white border border-[#E5DFD5]">
+                        <span className="text-[10px] text-stone-600 block uppercase">Casting Time</span>
+                        <span className="font-semibold text-stone-900">{item.castingTime}</span>
                       </div>
                     )}
                     {item.range && (
-                      <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                        <span className="text-[10px] text-slate-500 block uppercase">Range</span>
-                        <span className="font-medium text-slate-200">{item.range}</span>
+                      <div className="p-2.5 rounded-xl bg-white border border-[#E5DFD5]">
+                        <span className="text-[10px] text-stone-600 block uppercase">Range</span>
+                        <span className="font-semibold text-stone-900">{item.range}</span>
                       </div>
                     )}
                     {item.components && (
-                      <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                        <span className="text-[10px] text-slate-500 block uppercase">Components</span>
-                        <span className="font-medium text-slate-200">{item.components}</span>
+                      <div className="p-2.5 rounded-xl bg-white border border-[#E5DFD5]">
+                        <span className="text-[10px] text-stone-600 block uppercase">Components</span>
+                        <span className="font-semibold text-stone-900">{item.components}</span>
                       </div>
                     )}
                     {item.duration && (
-                      <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                        <span className="text-[10px] text-slate-500 block uppercase">Duration</span>
-                        <span className="font-medium text-slate-200">{item.duration}</span>
+                      <div className="p-2.5 rounded-xl bg-white border border-[#E5DFD5]">
+                        <span className="text-[10px] text-stone-600 block uppercase">Duration</span>
+                        <span className="font-semibold text-stone-900">{item.duration}</span>
                       </div>
                     )}
                     {item.damage && (
-                      <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                        <span className="text-[10px] text-slate-500 block uppercase">Damage</span>
-                        <span className="font-bold text-amber-400 font-mono">{item.damage} {item.damageType}</span>
+                      <div className="p-2.5 rounded-xl bg-white border border-[#E5DFD5]">
+                        <span className="text-[10px] text-stone-600 block uppercase">Damage</span>
+                        <span className="font-bold text-stone-900 font-mono">{item.damage} {item.damageType}</span>
                       </div>
                     )}
                     {item.cost && (
-                      <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                        <span className="text-[10px] text-slate-500 block uppercase">Cost</span>
-                        <span className="font-medium text-amber-300">{item.cost}</span>
+                      <div className="p-2.5 rounded-xl bg-white border border-[#E5DFD5]">
+                        <span className="text-[10px] text-stone-600 block uppercase">Cost</span>
+                        <span className="font-semibold text-stone-900">{item.cost}</span>
                       </div>
                     )}
                     {item.weight !== undefined && (
-                      <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                        <span className="text-[10px] text-slate-500 block uppercase">Weight</span>
-                        <span className="font-medium text-slate-200">{item.weight} lbs</span>
+                      <div className="p-2.5 rounded-xl bg-white border border-[#E5DFD5]">
+                        <span className="text-[10px] text-stone-600 block uppercase">Weight</span>
+                        <span className="font-semibold text-stone-900">{item.weight} lbs</span>
                       </div>
                     )}
                   </div>
 
                   {/* Body Text */}
-                  <div className="prose prose-invert prose-sm text-xs leading-relaxed text-slate-300 whitespace-pre-line bg-slate-900/60 p-4 rounded-lg border border-slate-800/80">
+                  <div className="text-xs leading-relaxed text-stone-800 whitespace-pre-line bg-white p-5 rounded-2xl border border-[#E5DFD5] shadow-sm">
                     {item.description && clean5eToolsText(item.description)}
                     {item.entries && render5eToolsEntries(item.entries)}
                   </div>
 
-                  {/* Class Features Accordion / List if viewing class */}
+                  {/* Class Features Accordion / List */}
                   {item.features && item.features.length > 0 && (
                     <div className="space-y-2 mt-4">
-                      <h5 className="text-xs font-semibold uppercase tracking-wider text-amber-300">
+                      <h5 className="text-xs font-semibold uppercase tracking-wider text-stone-700">
                         Class Features Progression
                       </h5>
                       {item.features.map((feat: any) => (
-                        <div key={feat.name} className="p-3 rounded bg-slate-900/80 border border-slate-800">
-                          <div className="flex items-center justify-between text-xs font-bold text-slate-200">
+                        <div key={feat.name} className="p-3.5 rounded-xl bg-white border border-[#E5DFD5]">
+                          <div className="flex items-center justify-between text-xs font-semibold text-stone-900">
                             <span>{feat.name}</span>
-                            <span className="text-slate-500 font-normal">Level {feat.level}</span>
+                            <span className="text-stone-600 font-normal">Level {feat.level}</span>
                           </div>
-                          <div className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                          <div className="text-[11px] text-stone-600 mt-1 leading-relaxed">
                             {render5eToolsEntries(feat.entries)}
                           </div>
                         </div>
@@ -420,16 +411,16 @@ export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
                   {/* Subclasses */}
                   {item.subclasses && item.subclasses.length > 0 && (
                     <div className="space-y-2 mt-4">
-                      <h5 className="text-xs font-semibold uppercase tracking-wider text-amber-300">
+                      <h5 className="text-xs font-semibold uppercase tracking-wider text-stone-700">
                         Subclasses
                       </h5>
                       {item.subclasses.map((sub: any) => (
-                        <div key={sub.name} className="p-3 rounded bg-slate-900/80 border border-slate-800">
-                          <div className="text-xs font-bold text-slate-200">{sub.name}</div>
+                        <div key={sub.name} className="p-3.5 rounded-xl bg-white border border-[#E5DFD5]">
+                          <div className="text-xs font-semibold text-stone-900">{sub.name}</div>
                           {sub.subclassFeatures?.map((f: any) => (
-                            <div key={f.name} className="mt-2 pl-2 border-l border-amber-500/30">
-                              <span className="text-xs font-semibold text-amber-300">{f.name} (Lvl {f.level})</span>
-                              <p className="text-[11px] text-slate-400 mt-0.5">{render5eToolsEntries(f.entries)}</p>
+                            <div key={f.name} className="mt-2 pl-2 border-l-2 border-stone-300">
+                              <span className="text-xs font-medium text-stone-800">{f.name} (Lvl {f.level})</span>
+                              <p className="text-[11px] text-stone-600 mt-0.5">{render5eToolsEntries(f.entries)}</p>
                             </div>
                           ))}
                         </div>

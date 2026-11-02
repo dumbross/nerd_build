@@ -19,12 +19,15 @@ import {
   Plus,
   Trash2,
   Lock,
-  Unlock,
-  AlertTriangle,
-  Info,
+  Wand2,
   Check,
+  Heart,
+  Zap,
+  Footprints,
+  Eye,
+  RotateCcw,
 } from 'lucide-react';
-import { Character, AbilityScores, WeaponItem, ArmorItem, GearItem, Spell } from '../../types/character';
+import { Character, AbilityScores, WeaponItem, ArmorItem, GearItem, Spell, AbilityName } from '../../types/character';
 import { FIVE_TOOLS_RACES } from '../../data/races';
 import { FIVE_TOOLS_CLASSES } from '../../data/classes';
 import { FIVE_TOOLS_BACKGROUNDS } from '../../data/backgrounds';
@@ -44,6 +47,7 @@ import {
   isSpellEligible,
   getProficiencyBonus,
   getStartingSpellsForClass,
+  getOptimalArmoryForClass,
   POINT_BUY_COST,
 } from '../../utils/calculations';
 import { clean5eToolsText, render5eToolsEntries } from '../../utils/5eParser';
@@ -58,14 +62,31 @@ interface BuilderViewProps {
 }
 
 const STEPS = [
-  { id: 'race', label: '1. Race / Species', icon: Shield },
-  { id: 'class', label: '2. Class & Subclass', icon: Swords },
-  { id: 'abilities', label: '3. Ability Scores', icon: Dices },
-  { id: 'background', label: '4. Background & Identity', icon: User },
-  { id: 'equipment', label: '5. Equipment & Gear', icon: Backpack },
-  { id: 'spells', label: '6. Spells & Grimoire', icon: Sparkles },
-  { id: 'review', label: '7. Review & Export', icon: CheckCircle2 },
+  { id: 'race', num: '01', label: 'Lineage', subtitle: 'Race & Species', icon: Shield },
+  { id: 'class', num: '02', label: 'Calling', subtitle: 'Class & Subclass', icon: Swords },
+  { id: 'abilities', num: '03', label: 'Attributes', subtitle: 'Ability Scores', icon: Dices },
+  { id: 'background', num: '04', label: 'Background', subtitle: 'Identity & Origin', icon: User },
+  { id: 'equipment', num: '05', label: 'Armory', subtitle: 'Weapons & Gear', icon: Backpack },
+  { id: 'spells', num: '06', label: 'Grimoire', subtitle: 'Spells & Cantrips', icon: Sparkles },
+  { id: 'review', num: '07', label: 'Chronicle', subtitle: 'Review & PDF Export', icon: CheckCircle2 },
 ];
+
+// Recommended standard array distributions per class
+const CLASS_RECOMMENDED_SCORES: Record<string, AbilityScores> = {
+  Barbarian: { str: 15, con: 14, dex: 13, wis: 12, cha: 10, int: 8 },
+  Bard: { cha: 15, dex: 14, con: 13, wis: 12, int: 10, str: 8 },
+  Cleric: { wis: 15, con: 14, str: 13, dex: 12, cha: 10, int: 8 },
+  Druid: { wis: 15, con: 14, dex: 13, int: 12, cha: 10, str: 8 },
+  Fighter: { str: 15, con: 14, dex: 13, wis: 12, cha: 10, int: 8 },
+  Monk: { dex: 15, wis: 14, con: 13, str: 12, int: 10, cha: 8 },
+  Paladin: { str: 15, cha: 14, con: 13, wis: 12, dex: 10, int: 8 },
+  Ranger: { dex: 15, wis: 14, con: 13, str: 12, int: 10, cha: 8 },
+  Rogue: { dex: 15, int: 14, con: 13, cha: 12, wis: 10, str: 8 },
+  Sorcerer: { cha: 15, con: 14, dex: 13, wis: 12, int: 10, str: 8 },
+  Warlock: { cha: 15, con: 14, dex: 13, wis: 12, int: 10, str: 8 },
+  Wizard: { int: 15, con: 14, dex: 13, wis: 12, cha: 10, str: 8 },
+  Artificer: { int: 15, con: 14, dex: 13, wis: 12, str: 10, cha: 8 },
+};
 
 export const BuilderView: React.FC<BuilderViewProps> = ({
   character,
@@ -81,13 +102,15 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
   const [spellSearch, setSpellSearch] = useState('');
   const [spellLevelFilter, setSpellLevelFilter] = useState<string>('eligible');
   const [filterClassOnly, setFilterClassOnly] = useState<boolean>(true);
-  const [spellNotice, setSpellNotice] = useState<string | null>(null);
+  const [raceSearch, setRaceSearch] = useState('');
 
-  const selectedRaceObj = FIVE_TOOLS_RACES.find((r) => r.name.toLowerCase() === character.race.toLowerCase()) || FIVE_TOOLS_RACES[0];
-  const selectedClassObj = FIVE_TOOLS_CLASSES.find((c) => c.name.toLowerCase() === character.className.toLowerCase()) || FIVE_TOOLS_CLASSES[4];
-  const selectedBgObj = FIVE_TOOLS_BACKGROUNDS.find((b) => b.name.toLowerCase() === character.background.toLowerCase()) || FIVE_TOOLS_BACKGROUNDS[0];
+  const selectedRaceObj =
+    FIVE_TOOLS_RACES.find((r) => r.name.toLowerCase() === character.race.toLowerCase()) || FIVE_TOOLS_RACES[0];
+  const selectedClassObj =
+    FIVE_TOOLS_CLASSES.find((c) => c.name.toLowerCase() === character.className.toLowerCase()) || FIVE_TOOLS_CLASSES[4];
+  const selectedBgObj =
+    FIVE_TOOLS_BACKGROUNDS.find((b) => b.name.toLowerCase() === character.background.toLowerCase()) || FIVE_TOOLS_BACKGROUNDS[0];
 
-  // Helper update
   const update = (patch: Partial<Character>) => {
     onUpdateCharacter({
       ...character,
@@ -104,7 +127,6 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
     const defaultSubrace = race.subraces?.[0]?.name;
     const racialBonuses: Partial<AbilityScores> = {};
 
-    // Apply race ability bonus
     if (race.ability?.[0]) {
       const b = race.ability[0];
       if (b.str) racialBonuses.str = b.str;
@@ -115,7 +137,6 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
       if (b.cha) racialBonuses.cha = b.cha;
     }
 
-    // Apply subrace bonus if any
     if (defaultSubrace && race.subraces?.[0]?.ability?.[0]) {
       const sb = race.subraces[0].ability[0];
       if (sb.str) racialBonuses.str = (racialBonuses.str || 0) + sb.str;
@@ -202,14 +223,15 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
 
     const spellSlots = getClassSpellSlots(c.name, character.level);
     const maxSlot = getMaxSpellLevel(c.name, character.level);
-    const filteredSpells = (character.spells || []).filter((s) => s.level <= maxSlot);
     const isCaster = isSpellcastingClass(c.name) || !!c.spellcastingAbility;
-    const finalSpells =
-      filteredSpells.length > 0
-        ? filteredSpells
-        : isCaster
-        ? getStartingSpellsForClass(c.name)
-        : [];
+    const optimalSpells = isCaster ? getStartingSpellsForClass(c.name) : [];
+    const optimalArmory = getOptimalArmoryForClass(c.name);
+
+    // If standard array mode is active, automatically apply optimal score distribution for the chosen class
+    const updatedAbilities =
+      character.abilityMode === 'standard' && CLASS_RECOMMENDED_SCORES[c.name]
+        ? { ...CLASS_RECOMMENDED_SCORES[c.name] }
+        : character.baseAbilities;
 
     update({
       className: c.name,
@@ -219,7 +241,12 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
       weaponProficiencies: c.weaponProficiencies || [],
       spellcastingAbility: c.spellcastingAbility,
       spellSlotsTotal: spellSlots,
-      spells: finalSpells,
+      spells: optimalSpells,
+      weapons: optimalArmory.weapons,
+      armor: optimalArmory.armor,
+      inventory: optimalArmory.inventory,
+      currency: optimalArmory.currency,
+      baseAbilities: updatedAbilities,
       hpMax: Math.max(1, baseHp),
       hpCurrent: Math.max(1, baseHp),
       features: [
@@ -227,7 +254,6 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
         ...classFeatures,
       ],
     });
-
   };
 
   // Step 4: Background
@@ -236,7 +262,9 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
     if (!bg) return;
 
     const bgSkills = (bg.skillProficiencies || []).map((s) => s.toLowerCase().replace(/\s+/g, '_') as any);
-    const existingSkills = character.skillProficiencies.filter((s) => !selectedBgObj.skillProficiencies?.map((bs) => bs.toLowerCase().replace(/\s+/g, '_')).includes(s));
+    const existingSkills = character.skillProficiencies.filter(
+      (s) => !selectedBgObj.skillProficiencies?.map((bs) => bs.toLowerCase().replace(/\s+/g, '_')).includes(s)
+    );
 
     const bgFeature = bg.feature
       ? [
@@ -272,15 +300,86 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
   const totalAbilities = getAbilityScoresTotal(character);
   const pointBuyUsed = calculatePointBuyUsed(character.baseAbilities);
   const pointBuyRemaining = 27 - pointBuyUsed;
-
   const currentStep = STEPS[currentStepIndex];
 
+  // Auto-apply recommended scores for current class
+  const handleApplyRecommendedScores = () => {
+    const rec = CLASS_RECOMMENDED_SCORES[character.className] || CLASS_RECOMMENDED_SCORES.Fighter;
+    update({ baseAbilities: { ...rec } });
+  };
+
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-      {/* Builder Breadcrumb Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-2 overflow-x-auto">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+      {/* 1. Serene Character Dossier Card (Continuous Living Summary) */}
+      <div className="bg-white border border-[#E5DFD5] rounded-2xl p-5 sm:p-6 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+          <div className="space-y-1.5 flex-1 min-w-0">
+            <div className="flex items-center gap-3">
+              <input
+                type="text"
+                value={character.name}
+                onChange={(e) => update({ name: e.target.value })}
+                placeholder="Name your hero..."
+                className="font-serif text-2xl sm:text-3xl font-semibold text-stone-900 bg-transparent border-b border-transparent hover:border-stone-300 focus:border-[#B85D36] focus:outline-none transition-colors w-full max-w-md tracking-tight"
+                title="Click to edit character name"
+              />
+            </div>
+
+            {/* Zero-pill metadata line */}
+            <div className="text-xs text-stone-600 flex items-center gap-2 flex-wrap">
+              <span className="font-medium text-stone-800">{character.race}{character.subrace ? ` (${character.subrace})` : ''}</span>
+              <span className="text-stone-300">·</span>
+              <span className="font-medium text-stone-800">{character.className}{character.subclass ? ` · ${character.subclass}` : ''}</span>
+              <span className="text-stone-300">·</span>
+              <span>{character.background}</span>
+              <span className="text-stone-300">·</span>
+              <span className="text-stone-700 font-semibold tabular-nums">Level {character.level}</span>
+            </div>
+          </div>
+
+          {/* Quiet Vitals Strip */}
+          <div className="flex items-center gap-3 sm:gap-4 shrink-0 overflow-x-auto pb-1 lg:pb-0">
+            <div className="px-3 py-2 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA] text-center min-w-[64px]">
+              <div className="text-[10px] uppercase tracking-wider text-stone-600 font-medium">Armor</div>
+              <div className="text-lg font-mono font-bold text-stone-900 tabular-nums">
+                {calculateArmorClass(character.armor, totalAbilities.dex)}
+              </div>
+            </div>
+
+            <div className="px-3 py-2 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA] text-center min-w-[64px]">
+              <div className="text-[10px] uppercase tracking-wider text-stone-600 font-medium">Hit Points</div>
+              <div className="text-lg font-mono font-bold text-[#2E4A3E] tabular-nums">
+                {character.hpMax}
+              </div>
+            </div>
+
+            <div className="px-3 py-2 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA] text-center min-w-[64px]">
+              <div className="text-[10px] uppercase tracking-wider text-stone-600 font-medium">Speed</div>
+              <div className="text-lg font-mono font-bold text-stone-900 tabular-nums">
+                {character.speed} <span className="text-xs font-normal text-stone-600">ft</span>
+              </div>
+            </div>
+
+            <div className="px-3 py-2 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA] text-center min-w-[64px]">
+              <div className="text-[10px] uppercase tracking-wider text-stone-600 font-medium">Initiative</div>
+              <div className="text-lg font-mono font-bold text-stone-900 tabular-nums">
+                {formatModifier(getAbilityModifier(totalAbilities.dex))}
+              </div>
+            </div>
+
+            <div className="px-3 py-2 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA] text-center min-w-[64px]">
+              <div className="text-[10px] uppercase tracking-wider text-stone-600 font-medium">Passive Perc</div>
+              <div className="text-lg font-mono font-bold text-stone-900 tabular-nums">
+                {calculatePassivePerception(totalAbilities, character.skillProficiencies, character.skillExpertise, getProficiencyBonus(character.level))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Step Progression Bar (Minimalist Scandinavian Track) */}
+      <div className="bg-white border border-[#E5DFD5] rounded-2xl p-2 shadow-sm flex items-center justify-between gap-1 overflow-x-auto">
         {STEPS.map((step, idx) => {
-          const Icon = step.icon;
           const isActive = idx === currentStepIndex;
           const isDone = idx < currentStepIndex;
 
@@ -288,74 +387,107 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
             <button
               key={step.id}
               onClick={() => setCurrentStepIndex(idx)}
-              className={`px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 whitespace-nowrap transition-colors shrink-0 ${
+              className={`flex-1 min-w-[120px] px-3 py-2.5 rounded-xl text-left transition-all ${
                 isActive
-                  ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20'
+                  ? 'bg-stone-900 text-white shadow-sm'
                   : isDone
-                  ? 'text-amber-400 hover:bg-slate-800/80'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                  ? 'bg-transparent text-stone-900 hover:bg-[#FAF8F5]'
+                  : 'bg-transparent text-stone-600 hover:text-stone-900 hover:bg-[#FAF8F5]'
               }`}
             >
-              <Icon className="w-4 h-4" />
-              <span>{step.label}</span>
+              <div className="flex items-center gap-1.5">
+                <span className={`text-[10px] font-mono tracking-wider ${isActive ? 'text-[#EBD6CA]' : 'text-stone-600'}`}>
+                  {step.num}
+                </span>
+                {isDone && <Check className="w-3 h-3 text-[#2E4A3E]" />}
+              </div>
+              <div className="text-xs font-semibold truncate leading-snug">
+                {step.label}
+              </div>
+              <div className={`text-[10px] truncate ${isActive ? 'text-stone-300' : 'text-stone-600'}`}>
+                {step.subtitle}
+              </div>
             </button>
           );
         })}
       </div>
 
-      {/* Step Content */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-6 shadow-xl min-h-[500px]">
-        {/* STEP 1: RACE */}
+      {/* 3. Main Step Workspace Canvas */}
+      <div className="bg-white border border-[#E5DFD5] rounded-2xl p-6 sm:p-8 shadow-sm min-h-[520px]">
+        {/* STEP 1: LINEAGE (Race & Species) */}
         {currentStep.id === 'race' && (
           <div className="space-y-6">
-            <div>
-              <h3 className="font-serif text-xl font-bold text-amber-100">
-                Choose Character Race / Species
-              </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                Your character’s heritage gives them innate physical traits, languages, and ability score increases.
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-serif text-2xl font-semibold text-stone-900">
+                  Select Lineage & Species
+                </h3>
+                <p className="text-xs text-stone-600 mt-1">
+                  Heritage bestows biological features, innate languages, movement speed, and ability score increases.
+                </p>
+              </div>
+
+              {/* Clean search bar */}
+              <div className="relative w-full sm:w-64">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-stone-600" />
+                <input
+                  type="text"
+                  placeholder="Filter lineages..."
+                  value={raceSearch}
+                  onChange={(e) => setRaceSearch(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 bg-[#FAF8F5] border border-[#E5DFD5] rounded-xl text-xs text-stone-900 placeholder-stone-600 focus:outline-none focus:border-stone-400"
+                />
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-              {FIVE_TOOLS_RACES.map((race) => {
+            {/* Race Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {FIVE_TOOLS_RACES.filter((r) => r.name.toLowerCase().includes(raceSearch.toLowerCase())).map((race) => {
                 const isSelected = character.race.toLowerCase() === race.name.toLowerCase();
                 return (
                   <button
                     key={race.name}
                     onClick={() => handleSelectRace(race.name)}
-                    className={`p-3.5 rounded-xl border text-left transition-all ${
+                    className={`p-4 rounded-xl border text-left transition-all relative ${
                       isSelected
-                        ? 'bg-amber-500/15 border-amber-500 text-amber-200 shadow-md shadow-amber-500/10'
-                        : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 text-slate-300 hover:bg-slate-800/40'
+                        ? 'bg-white border-stone-900 ring-1 ring-stone-900/10 shadow-sm'
+                        : 'bg-[#FAF8F5] hover:bg-[#F5F1EB] border-[#E5DFD5] text-stone-800'
                     }`}
                   >
-                    <div className="font-bold text-sm">{race.name}</div>
-                    <div className="text-[11px] text-slate-400 mt-1">
+                    {isSelected && (
+                      <div className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-[#B85D36]" />
+                    )}
+                    <div className="font-serif font-semibold text-sm text-stone-900">{race.name}</div>
+                    <div className="text-[11px] text-stone-600 mt-1">
                       Speed: {typeof race.speed === 'number' ? race.speed : 30} ft
                     </div>
+                    {race.subraces && race.subraces.length > 0 && (
+                      <div className="text-[10px] text-stone-600 mt-0.5">
+                        {race.subraces.length} subraces
+                      </div>
+                    )}
                   </button>
                 );
               })}
             </div>
 
-            {/* Subrace if applicable */}
+            {/* Subrace selector if available */}
             {selectedRaceObj.subraces && selectedRaceObj.subraces.length > 0 && (
-              <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3">
-                <div className="text-xs font-semibold text-amber-300 uppercase tracking-wider">
-                  Select {selectedRaceObj.name} Subrace
+              <div className="p-5 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA] space-y-3">
+                <div className="text-xs font-semibold text-stone-900 uppercase tracking-wider">
+                  Select {selectedRaceObj.name} Variant / Subrace
                 </div>
-                <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
                   {selectedRaceObj.subraces.map((sub) => {
                     const isSelected = character.subrace === sub.name;
                     return (
                       <button
                         key={sub.name}
                         onClick={() => handleSelectSubrace(sub.name)}
-                        className={`px-4 py-2 rounded-lg text-xs font-semibold border transition-all ${
+                        className={`px-3.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
                           isSelected
-                            ? 'bg-amber-500 text-slate-950 border-amber-500'
-                            : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
+                            ? 'bg-stone-900 text-white border-stone-900 shadow-sm'
+                            : 'bg-white border-[#E0D9CE] text-stone-700 hover:border-stone-400'
                         }`}
                       >
                         {sub.name}
@@ -367,33 +499,33 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
             )}
 
             {/* Selected Race Details preview */}
-            <div className="p-4 rounded-xl bg-slate-950/40 border border-slate-800/80 space-y-3">
-              <h4 className="font-serif text-sm font-bold text-slate-200">
-                {selectedRaceObj.name} Traits & 5e.tools Data
+            <div className="p-5 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA] space-y-3">
+              <h4 className="font-serif text-sm font-semibold text-stone-900">
+                {selectedRaceObj.name} Traits & Compendium Entries
               </h4>
-              <div className="text-xs text-slate-300 leading-relaxed space-y-2">
+              <div className="text-xs text-stone-700 leading-relaxed space-y-2">
                 {render5eToolsEntries(selectedRaceObj.entries)}
               </div>
             </div>
           </div>
         )}
 
-        {/* STEP 2: CLASS */}
+        {/* STEP 2: CALLING (Class & Subclass) */}
         {currentStep.id === 'class' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h3 className="font-serif text-xl font-bold text-amber-100">
+                <h3 className="font-serif text-2xl font-semibold text-stone-900">
                   Choose Class & Subclass
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  Your class defines your primary vocation, hit die, combat capabilities, and magical abilities.
+                <p className="text-xs text-stone-600 mt-1">
+                  Your class determines your combat training, hit die, saving throws, and magical disciplines.
                 </p>
               </div>
 
               {/* Level Selector */}
-              <div className="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
-                <span className="text-xs text-slate-400 font-medium">Starting Level:</span>
+              <div className="flex items-center gap-2 bg-[#FAF8F5] px-3 py-1.5 rounded-xl border border-[#E5DFD5]">
+                <span className="text-xs text-stone-600 font-medium">Starting Level:</span>
                 <select
                   value={character.level}
                   onChange={(e) => {
@@ -425,12 +557,11 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
                         ...classFeatures,
                       ],
                     });
-
                   }}
-                  className="bg-transparent text-amber-300 font-mono font-bold text-sm focus:outline-none"
+                  className="bg-transparent text-stone-900 font-mono font-semibold text-xs focus:outline-none"
                 >
                   {Array.from({ length: 20 }, (_, i) => i + 1).map((lvl) => (
-                    <option key={lvl} value={lvl} className="bg-slate-900 text-slate-100">
+                    <option key={lvl} value={lvl} className="bg-white text-stone-900">
                       Level {lvl}
                     </option>
                   ))}
@@ -438,45 +569,54 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {/* Class Cards Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {FIVE_TOOLS_CLASSES.map((cls) => {
                 const isSelected = character.className.toLowerCase() === cls.name.toLowerCase();
                 return (
                   <button
                     key={cls.name}
                     onClick={() => handleSelectClass(cls.name)}
-                    className={`p-3.5 rounded-xl border text-left transition-all ${
+                    className={`p-4 rounded-xl border text-left transition-all relative ${
                       isSelected
-                        ? 'bg-amber-500/15 border-amber-500 text-amber-200 shadow-md shadow-amber-500/10'
-                        : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 text-slate-300 hover:bg-slate-800/40'
+                        ? 'bg-white border-stone-900 ring-1 ring-stone-900/10 shadow-sm'
+                        : 'bg-[#FAF8F5] hover:bg-[#F5F1EB] border-[#E5DFD5] text-stone-800'
                     }`}
                   >
-                    <div className="font-bold text-sm">{cls.name}</div>
-                    <div className="text-[11px] text-slate-400 mt-1">
-                      Hit Die: <span className="font-mono text-amber-300">d{cls.hd.faces}</span>
+                    {isSelected && (
+                      <div className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-[#B85D36]" />
+                    )}
+                    <div className="font-serif font-semibold text-sm text-stone-900">{cls.name}</div>
+                    <div className="text-[11px] text-stone-600 mt-1">
+                      Hit Die: <span className="font-mono font-semibold text-stone-800">d{cls.hd.faces}</span>
                     </div>
+                    {cls.spellcastingAbility && (
+                      <div className="text-[10px] text-[#B85D36] mt-0.5 capitalize">
+                        {cls.spellcastingAbility} Spellcaster
+                      </div>
+                    )}
                   </button>
                 );
               })}
             </div>
 
-            {/* Subclasses */}
+            {/* Subclasses Selection */}
             {selectedClassObj.subclasses && selectedClassObj.subclasses.length > 0 && (
-              <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3">
-                <div className="text-xs font-semibold text-amber-300 uppercase tracking-wider">
-                  Select {selectedClassObj.name} Subclass
+              <div className="p-5 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA] space-y-3">
+                <div className="text-xs font-semibold text-stone-900 uppercase tracking-wider">
+                  Select {selectedClassObj.name} Subclass / Archetype
                 </div>
-                <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
                   {selectedClassObj.subclasses.map((sub) => {
                     const isSelected = character.subclass === sub.name;
                     return (
                       <button
                         key={sub.name}
                         onClick={() => update({ subclass: sub.name })}
-                        className={`px-4 py-2 rounded-lg text-xs font-semibold border transition-all ${
+                        className={`px-3.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
                           isSelected
-                            ? 'bg-amber-500 text-slate-950 border-amber-500'
-                            : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
+                            ? 'bg-stone-900 text-white border-stone-900 shadow-sm'
+                            : 'bg-white border-[#E0D9CE] text-stone-700 hover:border-stone-400'
                         }`}
                       >
                         {sub.name}
@@ -488,20 +628,20 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
             )}
 
             {/* Class Features */}
-            <div className="p-4 rounded-xl bg-slate-950/40 border border-slate-800/80 space-y-3">
-              <h4 className="font-serif text-sm font-bold text-slate-200">
+            <div className="p-5 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA] space-y-3">
+              <h4 className="font-serif text-sm font-semibold text-stone-900">
                 {selectedClassObj.name} Features (Level {character.level})
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                 {(selectedClassObj.features || [])
                   .filter((f) => f.level <= character.level)
                   .map((feat) => (
-                    <div key={feat.name} className="p-3 rounded-lg bg-slate-900 border border-slate-800">
-                      <div className="font-bold text-amber-300 flex items-center justify-between">
+                    <div key={feat.name} className="p-3.5 rounded-xl bg-white border border-[#E5DFD5]">
+                      <div className="font-semibold text-stone-900 flex items-center justify-between">
                         <span>{feat.name}</span>
-                        <span className="text-[10px] text-slate-500 font-normal">Level {feat.level}</span>
+                        <span className="text-[10px] text-stone-600 font-normal">Level {feat.level}</span>
                       </div>
-                      <div className="text-slate-400 mt-1 leading-relaxed text-[11px]">
+                      <div className="text-stone-600 mt-1 leading-relaxed text-[11px]">
                         {render5eToolsEntries(feat.entries)}
                       </div>
                     </div>
@@ -511,29 +651,36 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
           </div>
         )}
 
-        {/* STEP 3: ABILITY SCORES */}
+        {/* STEP 3: ATTRIBUTES (Ability Scores) */}
         {currentStep.id === 'abilities' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h3 className="font-serif text-xl font-bold text-amber-100">
-                  Generate Ability Scores
+                <h3 className="font-serif text-2xl font-semibold text-stone-900">
+                  Assign Ability Scores
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  Choose between 27-Point Buy, Standard Array [15, 14, 13, 12, 10, 8], or 4d6-Drop-Lowest dice rolls.
+                <p className="text-xs text-stone-600 mt-1">
+                  Choose 27-Point Buy, Standard Array [15, 14, 13, 12, 10, 8], or 4d6-drop-lowest rolling.
                 </p>
               </div>
 
               {/* Mode Switcher */}
-              <div className="flex items-center gap-1 p-1 bg-slate-950 rounded-lg border border-slate-800 text-xs">
+              <div className="flex items-center gap-1 p-1 bg-[#FAF8F5] rounded-xl border border-[#E5DFD5] text-xs">
                 {(['pointbuy', 'standard', 'rolled'] as const).map((m) => (
                   <button
                     key={m}
-                    onClick={() => update({ abilityMode: m })}
-                    className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
+                    onClick={() => {
+                      if (m === 'standard') {
+                        const rec = CLASS_RECOMMENDED_SCORES[character.className] || CLASS_RECOMMENDED_SCORES.Fighter;
+                        update({ abilityMode: m, baseAbilities: { ...rec } });
+                      } else {
+                        update({ abilityMode: m });
+                      }
+                    }}
+                    className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
                       character.abilityMode === m
-                        ? 'bg-amber-500 text-slate-950 font-bold'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-stone-900 text-white font-semibold shadow-sm'
+                        : 'text-stone-600 hover:text-stone-900'
                     }`}
                   >
                     {m === 'pointbuy' ? 'Point Buy (27 pts)' : m === 'standard' ? 'Standard Array' : '4d6 Drop Lowest'}
@@ -542,50 +689,58 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
               </div>
             </div>
 
-            {/* Point Buy Status banner */}
-            {character.abilityMode === 'pointbuy' && (
-              <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between">
-                <div>
-                  <span className="text-xs text-slate-400">Point Buy Budget:</span>
-                  <div className="text-lg font-mono font-bold text-amber-400 tabular-nums">
-                    {pointBuyRemaining} Points Remaining (Used {pointBuyUsed} / 27)
-                  </div>
+            {/* Helpful Quick-Start Actions: "Get out of the way" */}
+            <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="text-xs font-semibold text-stone-900">
+                  {character.abilityMode === 'pointbuy'
+                    ? `Point Buy: ${pointBuyRemaining} Points Remaining (Used ${pointBuyUsed} / 27)`
+                    : character.abilityMode === 'standard'
+                    ? 'Standard Array: [15, 14, 13, 12, 10, 8]'
+                    : '4d6 Drop Lowest Dice Rolls'}
                 </div>
-                <div className="text-[11px] text-slate-400 text-right">
-                  Scores range 8 to 15 before racial bonuses
+                <div className="text-[11px] text-stone-600 mt-0.5">
+                  Scores 8 to 15 before lineage bonuses. Modifiers calculate automatically.
                 </div>
               </div>
-            )}
 
-            {/* 4d6 Roll All Quick Action */}
-            {character.abilityMode === 'rolled' && (
-              <div className="p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/20 flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-semibold text-amber-200">Interactive 4d6 Roller</div>
-                  <div className="text-[11px] text-slate-400">Roll 4d6 for all 6 stats and drop the lowest die automatically</div>
-                </div>
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => {
-                    const newScores = {
-                      str: roll4d6DropLowest().total,
-                      dex: roll4d6DropLowest().total,
-                      con: roll4d6DropLowest().total,
-                      int: roll4d6DropLowest().total,
-                      wis: roll4d6DropLowest().total,
-                      cha: roll4d6DropLowest().total,
-                    };
-                    update({ baseAbilities: newScores });
-                  }}
-                  className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-450 text-slate-950 font-semibold text-xs transition-colors flex items-center gap-1.5"
+                  type="button"
+                  onClick={handleApplyRecommendedScores}
+                  className="px-3 py-1.5 rounded-lg bg-white hover:bg-stone-50 border border-[#DDD5C7] text-stone-800 text-xs font-medium transition-all shadow-sm flex items-center gap-1.5"
+                  title={`Set standard recommended scores for ${character.className}`}
                 >
-                  <Dices className="w-4 h-4" />
-                  <span>Roll All 6 Scores</span>
+                  <Wand2 className="w-3.5 h-3.5 text-[#B85D36]" />
+                  <span>Recommend for {character.className}</span>
                 </button>
-              </div>
-            )}
 
-            {/* Ability Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                {character.abilityMode === 'rolled' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      update({
+                        baseAbilities: {
+                          str: roll4d6DropLowest().total,
+                          dex: roll4d6DropLowest().total,
+                          con: roll4d6DropLowest().total,
+                          int: roll4d6DropLowest().total,
+                          wis: roll4d6DropLowest().total,
+                          cha: roll4d6DropLowest().total,
+                        },
+                      });
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium transition-all shadow-sm flex items-center gap-1.5"
+                  >
+                    <Dices className="w-3.5 h-3.5" />
+                    <span>Roll All 6</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* 6 Ability Cards Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
               {(['str', 'dex', 'con', 'int', 'wis', 'cha'] as const).map((stat) => {
                 const baseVal = character.baseAbilities[stat];
                 const racialBonus = character.customAbilityBonuses?.[stat] || 0;
@@ -614,44 +769,44 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
                 return (
                   <div
                     key={stat}
-                    className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 text-center flex flex-col items-center justify-between"
+                    className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E5DFD5] text-center flex flex-col items-center justify-between shadow-sm"
                   >
-                    <div className="text-xs uppercase font-bold tracking-wider text-slate-400">
+                    <div className="text-[11px] uppercase font-semibold tracking-wider text-stone-600">
                       {stat}
                     </div>
 
-                    <div className="my-2">
-                      <div className="text-3xl font-mono font-black text-amber-300 tabular-nums">
+                    <div className="my-2.5">
+                      <div className="text-3xl font-mono font-bold text-stone-900 tabular-nums">
                         {formatModifier(mod)}
                       </div>
-                      <div className="text-xs text-slate-400 mt-0.5">
-                        Total: <span className="font-bold text-slate-200 tabular-nums">{total}</span>
+                      <div className="text-xs text-stone-600 mt-0.5">
+                        Total: <span className="font-semibold text-stone-900 tabular-nums">{total}</span>
                       </div>
                     </div>
 
-                    <div className="w-full flex items-center justify-between gap-1 pt-2 border-t border-slate-800/80">
+                    <div className="w-full flex items-center justify-between gap-1 pt-2 border-t border-[#E8E3DA]">
                       <button
                         onClick={handleDecrement}
                         disabled={character.abilityMode === 'pointbuy' && baseVal <= 8}
-                        className="w-7 h-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold disabled:opacity-40"
+                        className="w-7 h-7 rounded-lg bg-white hover:bg-stone-100 text-stone-800 border border-[#DDD5C7] font-semibold text-sm disabled:opacity-30 shadow-sm"
                       >
                         -
                       </button>
-                      <span className="font-mono text-sm font-bold text-slate-300 tabular-nums">
+                      <span className="font-mono text-sm font-semibold text-stone-900 tabular-nums">
                         {baseVal}
                       </span>
                       <button
                         onClick={handleIncrement}
                         disabled={character.abilityMode === 'pointbuy' && baseVal >= 15}
-                        className="w-7 h-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold disabled:opacity-40"
+                        className="w-7 h-7 rounded-lg bg-white hover:bg-stone-100 text-stone-800 border border-[#DDD5C7] font-semibold text-sm disabled:opacity-30 shadow-sm"
                       >
                         +
                       </button>
                     </div>
 
                     {racialBonus > 0 && (
-                      <div className="text-[10px] text-emerald-400 font-medium mt-1.5">
-                        +{racialBonus} racial
+                      <div className="text-[10px] text-[#2E4A3E] font-medium mt-1.5">
+                        +{racialBonus} lineage
                       </div>
                     )}
                   </div>
@@ -665,15 +820,15 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
         {currentStep.id === 'background' && (
           <div className="space-y-6">
             <div>
-              <h3 className="font-serif text-xl font-bold text-amber-100">
-                Background, Alignment & Persona
+              <h3 className="font-serif text-2xl font-semibold text-stone-900">
+                Background, Persona & Alignment
               </h3>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs text-stone-600 mt-1">
                 Your origin story, training in skills, moral compass, and personal characteristics.
               </p>
             </div>
 
-            {/* Background Selector */}
+            {/* Background Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
               {FIVE_TOOLS_BACKGROUNDS.map((bg) => {
                 const isSelected = character.background.toLowerCase() === bg.name.toLowerCase();
@@ -681,14 +836,17 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
                   <button
                     key={bg.name}
                     onClick={() => handleSelectBackground(bg.name)}
-                    className={`p-3.5 rounded-xl border text-left transition-all ${
+                    className={`p-4 rounded-xl border text-left transition-all relative ${
                       isSelected
-                        ? 'bg-amber-500/15 border-amber-500 text-amber-200 shadow-md shadow-amber-500/10'
-                        : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 text-slate-300 hover:bg-slate-800/40'
+                        ? 'bg-white border-stone-900 ring-1 ring-stone-900/10 shadow-sm'
+                        : 'bg-[#FAF8F5] hover:bg-[#F5F1EB] border-[#E5DFD5] text-stone-800'
                     }`}
                   >
-                    <div className="font-bold text-sm">{bg.name}</div>
-                    <div className="text-[11px] text-slate-400 mt-1 truncate">
+                    {isSelected && (
+                      <div className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-[#B85D36]" />
+                    )}
+                    <div className="font-serif font-semibold text-sm text-stone-900">{bg.name}</div>
+                    <div className="text-[11px] text-stone-600 mt-1 truncate">
                       {bg.skillProficiencies?.join(', ')}
                     </div>
                   </button>
@@ -696,9 +854,9 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
               })}
             </div>
 
-            {/* Alignment row */}
-            <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
-              <label className="text-xs font-semibold text-slate-300 block">Alignment</label>
+            {/* Alignment Row */}
+            <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA] space-y-2">
+              <label className="text-xs font-semibold text-stone-900 block">Alignment</label>
               <div className="grid grid-cols-3 sm:grid-cols-9 gap-1.5 text-xs">
                 {[
                   'Lawful Good', 'Neutral Good', 'Chaotic Good',
@@ -708,10 +866,10 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
                   <button
                     key={align}
                     onClick={() => update({ alignment: align })}
-                    className={`py-1.5 px-2 rounded border text-center transition-colors truncate ${
+                    className={`py-1.5 px-2 rounded-lg border text-center transition-all truncate text-xs ${
                       character.alignment === align
-                        ? 'bg-amber-500 text-slate-950 font-bold border-amber-500'
-                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                        ? 'bg-stone-900 text-white font-semibold border-stone-900 shadow-sm'
+                        : 'bg-white border-[#E0D9CE] text-stone-700 hover:border-stone-400'
                     }`}
                   >
                     {align}
@@ -720,12 +878,14 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
               </div>
             </div>
 
-            {/* Personality Toolbar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-slate-950/70 border border-slate-800 rounded-xl">
+            {/* Roleplay Toolbar: Fast 1-click population */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-[#FAF8F5] border border-[#E8E3DA] rounded-xl">
               <div>
-                <span className="text-xs font-bold text-amber-200">5e.tools Background Identity & Roleplay</span>
-                <p className="text-[11px] text-slate-400">
-                  Populate authentic traits, ideals, bonds, and flaws from the {selectedBgObj.name} background.
+                <span className="text-xs font-semibold text-stone-900">
+                  {selectedBgObj.name} Roleplay Tables
+                </span>
+                <p className="text-[11px] text-stone-600">
+                  Quickly auto-fill or roll suggested traits, ideals, bonds, and flaws from the 5e compendium.
                 </p>
               </div>
 
@@ -744,7 +904,7 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
                       flaws: flaws[0] || character.flaws,
                     });
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-colors cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium transition-all shadow-sm"
                 >
                   Auto-Fill 5e Defaults
                 </button>
@@ -756,212 +916,122 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
                     const ideals = selectedBgObj.suggestedIdeals || [];
                     const bonds = selectedBgObj.suggestedBonds || [];
                     const flaws = selectedBgObj.suggestedFlaws || [];
-                    const rTrait = traits[Math.floor(Math.random() * traits.length)] || character.personalityTraits;
-                    const rIdeal = ideals[Math.floor(Math.random() * ideals.length)] || character.ideals;
-                    const rBond = bonds[Math.floor(Math.random() * bonds.length)] || character.bonds;
-                    const rFlaw = flaws[Math.floor(Math.random() * flaws.length)] || character.flaws;
                     update({
-                      personalityTraits: rTrait,
-                      ideals: rIdeal,
-                      bonds: rBond,
-                      flaws: rFlaw,
+                      personalityTraits: traits[Math.floor(Math.random() * traits.length)] || character.personalityTraits,
+                      ideals: ideals[Math.floor(Math.random() * ideals.length)] || character.ideals,
+                      bonds: bonds[Math.floor(Math.random() * bonds.length)] || character.bonds,
+                      flaws: flaws[Math.floor(Math.random() * flaws.length)] || character.flaws,
                     });
                   }}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs border border-slate-700 transition-colors cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-stone-800 border border-[#DDD5C7] text-xs font-medium transition-all shadow-sm flex items-center gap-1.5"
                 >
-                  <Dices className="w-3.5 h-3.5" />
+                  <Dices className="w-3.5 h-3.5 text-[#B85D36]" />
                   <span>Roll 5e Tables</span>
                 </button>
               </div>
             </div>
 
-            {/* Personality Fields */}
+            {/* Personality 4-Field Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-slate-400 block">
-                    Personality Traits
-                  </label>
-                  {selectedBgObj.suggestedTraits && (
-                    <span className="text-[10px] text-amber-400 font-mono">
-                      {selectedBgObj.name} d8 table
-                    </span>
-                  )}
-                </div>
+                <label className="text-xs font-semibold text-stone-900 block">Personality Traits</label>
                 <textarea
                   value={character.personalityTraits}
                   onChange={(e) => update({ personalityTraits: e.target.value })}
                   placeholder="Quirks, habits, demeanor..."
-                  className="w-full h-20 p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-amber-500/60 resize-none"
+                  className="w-full h-20 p-3 bg-[#FAF8F5] border border-[#E5DFD5] rounded-xl text-xs text-stone-900 focus:outline-none focus:border-stone-400 resize-none leading-relaxed"
                 />
-                {selectedBgObj.suggestedTraits && selectedBgObj.suggestedTraits.length > 0 && (
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                    <span className="text-[10px] text-slate-500 shrink-0">Quick pick:</span>
-                    {selectedBgObj.suggestedTraits.map((t, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => update({ personalityTraits: t })}
-                        className={`text-[10px] px-2 py-0.5 rounded border truncate max-w-[180px] shrink-0 transition-colors ${
-                          character.personalityTraits === t
-                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
-                        }`}
-                        title={t}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
 
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-slate-400 block">Ideals</label>
-                  {selectedBgObj.suggestedIdeals && (
-                    <span className="text-[10px] text-amber-400 font-mono">
-                      {selectedBgObj.name} d6 table
-                    </span>
-                  )}
-                </div>
+                <label className="text-xs font-semibold text-stone-900 block">Ideals</label>
                 <textarea
                   value={character.ideals}
                   onChange={(e) => update({ ideals: e.target.value })}
                   placeholder="Guiding principles, morals, beliefs..."
-                  className="w-full h-20 p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-amber-500/60 resize-none"
+                  className="w-full h-20 p-3 bg-[#FAF8F5] border border-[#E5DFD5] rounded-xl text-xs text-stone-900 focus:outline-none focus:border-stone-400 resize-none leading-relaxed"
                 />
-                {selectedBgObj.suggestedIdeals && selectedBgObj.suggestedIdeals.length > 0 && (
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                    <span className="text-[10px] text-slate-500 shrink-0">Quick pick:</span>
-                    {selectedBgObj.suggestedIdeals.map((idVal, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => update({ ideals: idVal })}
-                        className={`text-[10px] px-2 py-0.5 rounded border truncate max-w-[180px] shrink-0 transition-colors ${
-                          character.ideals === idVal
-                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
-                        }`}
-                        title={idVal}
-                      >
-                        {idVal}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
 
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-slate-400 block">Bonds</label>
-                  {selectedBgObj.suggestedBonds && (
-                    <span className="text-[10px] text-amber-400 font-mono">
-                      {selectedBgObj.name} d6 table
-                    </span>
-                  )}
-                </div>
+                <label className="text-xs font-semibold text-stone-900 block">Bonds</label>
                 <textarea
                   value={character.bonds}
                   onChange={(e) => update({ bonds: e.target.value })}
-                  placeholder="People, places, heirlooms you would die for..."
-                  className="w-full h-20 p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-amber-500/60 resize-none"
+                  placeholder="People, places, or heirlooms you would die for..."
+                  className="w-full h-20 p-3 bg-[#FAF8F5] border border-[#E5DFD5] rounded-xl text-xs text-stone-900 focus:outline-none focus:border-stone-400 resize-none leading-relaxed"
                 />
-                {selectedBgObj.suggestedBonds && selectedBgObj.suggestedBonds.length > 0 && (
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                    <span className="text-[10px] text-slate-500 shrink-0">Quick pick:</span>
-                    {selectedBgObj.suggestedBonds.map((bVal, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => update({ bonds: bVal })}
-                        className={`text-[10px] px-2 py-0.5 rounded border truncate max-w-[180px] shrink-0 transition-colors ${
-                          character.bonds === bVal
-                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
-                        }`}
-                        title={bVal}
-                      >
-                        {bVal}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
 
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-slate-400 block">Flaws</label>
-                  {selectedBgObj.suggestedFlaws && (
-                    <span className="text-[10px] text-amber-400 font-mono">
-                      {selectedBgObj.name} d6 table
-                    </span>
-                  )}
-                </div>
+                <label className="text-xs font-semibold text-stone-900 block">Flaws</label>
                 <textarea
                   value={character.flaws}
                   onChange={(e) => update({ flaws: e.target.value })}
                   placeholder="Weaknesses, vices, blind spots..."
-                  className="w-full h-20 p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-amber-500/60 resize-none"
+                  className="w-full h-20 p-3 bg-[#FAF8F5] border border-[#E5DFD5] rounded-xl text-xs text-stone-900 focus:outline-none focus:border-stone-400 resize-none leading-relaxed"
                 />
-                {selectedBgObj.suggestedFlaws && selectedBgObj.suggestedFlaws.length > 0 && (
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                    <span className="text-[10px] text-slate-500 shrink-0">Quick pick:</span>
-                    {selectedBgObj.suggestedFlaws.map((fVal, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => update({ flaws: fVal })}
-                        className={`text-[10px] px-2 py-0.5 rounded border truncate max-w-[180px] shrink-0 transition-colors ${
-                          character.flaws === fVal
-                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
-                        }`}
-                        title={fVal}
-                      >
-                        {fVal}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
           </div>
         )}
 
-        {/* STEP 5: EQUIPMENT */}
+        {/* STEP 5: ARMORY (Equipment & Gear) */}
         {currentStep.id === 'equipment' && (
           <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h3 className="font-serif text-xl font-bold text-amber-100 flex items-center gap-2">
-                  <span>Equipment & Armory</span>
-                  <span className="text-xs font-sans px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                    5e.tools Compendium
-                  </span>
+                <h3 className="font-serif text-2xl font-semibold text-stone-900">
+                  Equipment & Armory
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  Select starting weapons, armor, and gear. Equipped items instantly update your Armor Class, attacks, and speed.
+                <p className="text-xs text-stone-600 mt-1">
+                  Equip starting weapons, protective armor, and adventure gear. Equipped items instantly update Armor Class.
                 </p>
               </div>
 
               <button
                 onClick={() => setIsArmoryModalOpen(true)}
-                className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-450 text-slate-950 text-xs font-bold flex items-center gap-2 self-start sm:self-auto transition-all shadow-md cursor-pointer"
+                className="px-3.5 py-2 rounded-xl bg-white hover:bg-stone-50 border border-[#DDD5C7] text-stone-800 text-xs font-medium flex items-center gap-2 self-start sm:self-auto transition-all shadow-sm"
               >
-                <Swords className="w-4 h-4" />
-                <span>Open 5e.tools Armory Modal</span>
+                <Swords className="w-3.5 h-3.5 text-[#B85D36]" />
+                <span>Open Armory Catalog</span>
               </button>
             </div>
 
-            {/* Quick Presets based on Class */}
-            <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3">
-              <div className="text-xs font-semibold text-amber-300 uppercase tracking-wider flex items-center justify-between">
-                <span>Recommended Quick Packages for {character.className}</span>
-                <span className="text-[10px] text-slate-500 font-normal">Or browse the catalog below</span>
+            {/* Optimal Pre-Selected Armory Banner & Quick Loadout Archetypes */}
+            <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA] space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2.5 border-b border-[#E8E3DA]">
+                <div>
+                  <div className="text-xs font-semibold text-stone-900 flex items-center gap-2">
+                    <Wand2 className="w-3.5 h-3.5 text-[#B85D36]" />
+                    <span>Optimal 5e Armory Pre-Selected for {character.className}</span>
+                  </div>
+                  <div className="text-[11px] text-stone-600 mt-0.5">
+                    Authentic 5e weapons, armor, shield, adventuring pack, and starting currency tailored for {character.className}.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const opt = getOptimalArmoryForClass(character.className);
+                    update({
+                      weapons: opt.weapons,
+                      armor: opt.armor,
+                      inventory: opt.inventory,
+                      currency: opt.currency,
+                    });
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium transition-all shadow-sm flex items-center gap-1.5 self-start sm:self-auto shrink-0"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Re-apply Optimal Armory</span>
+                </button>
               </div>
-              <div className="flex items-center gap-2.5 flex-wrap">
+
+              <div className="text-[11px] font-semibold text-stone-800 uppercase tracking-wider flex items-center justify-between">
+                <span>Or Choose Quick Archetype Kit:</span>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   onClick={() => {
                     const w1 = FIVE_TOOLS_WEAPONS.find((w) => w.id === 'w_longsword') || FIVE_TOOLS_WEAPONS[0];
@@ -969,21 +1039,15 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
                     const a1 = FIVE_TOOLS_ARMOR.find((a) => a.id === 'a_chain_mail') || FIVE_TOOLS_ARMOR[0];
                     const a2 = FIVE_TOOLS_ARMOR.find((a) => a.id === 'a_shield') || FIVE_TOOLS_ARMOR[1];
                     update({
-                      weapons: [
-                        { ...w1, equipped: true },
-                        { ...w2, equipped: false },
-                      ],
-                      armor: [
-                        { ...a1, equipped: true },
-                        { ...a2, equipped: true },
-                      ],
+                      weapons: [{ ...w1, equipped: true }, { ...w2, equipped: false }],
+                      armor: [{ ...a1, equipped: true }, { ...a2, equipped: true }],
                       inventory: FIVE_TOOLS_STANDARD_GEAR.slice(0, 8),
                       currency: { cp: 0, sp: 20, ep: 0, gp: 35, pp: 0 },
                     });
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-xs font-medium cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-white hover:bg-stone-100 text-stone-800 border border-[#DDD5C7] text-xs font-medium shadow-sm transition-all"
                 >
-                  Martial Warrior Loadout
+                  Martial Warrior Kit
                 </button>
 
                 <button
@@ -992,18 +1056,15 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
                     const w2 = FIVE_TOOLS_WEAPONS.find((w) => w.id === 'w_shortbow') || FIVE_TOOLS_WEAPONS[1];
                     const a1 = FIVE_TOOLS_ARMOR.find((a) => a.id === 'a_leather') || FIVE_TOOLS_ARMOR[0];
                     update({
-                      weapons: [
-                        { ...w1, equipped: true },
-                        { ...w2, equipped: true },
-                      ],
+                      weapons: [{ ...w1, equipped: true }, { ...w2, equipped: true }],
                       armor: [{ ...a1, equipped: true }],
                       inventory: FIVE_TOOLS_STANDARD_GEAR.slice(0, 8),
                       currency: { cp: 0, sp: 40, ep: 0, gp: 60, pp: 0 },
                     });
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-xs font-medium cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-white hover:bg-stone-100 text-stone-800 border border-[#DDD5C7] text-xs font-medium shadow-sm transition-all"
                 >
-                  Finesse & Scout Loadout
+                  Finesse & Scout Kit
                 </button>
 
                 <button
@@ -1011,18 +1072,15 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
                     const w1 = FIVE_TOOLS_WEAPONS.find((w) => w.id === 'w_quarterstaff') || FIVE_TOOLS_WEAPONS[0];
                     const w2 = FIVE_TOOLS_WEAPONS.find((w) => w.id === 'w_dagger') || FIVE_TOOLS_WEAPONS[1];
                     update({
-                      weapons: [
-                        { ...w1, equipped: true },
-                        { ...w2, equipped: true },
-                      ],
+                      weapons: [{ ...w1, equipped: true }, { ...w2, equipped: true }],
                       armor: [],
                       inventory: FIVE_TOOLS_STANDARD_GEAR.slice(0, 8),
                       currency: { cp: 10, sp: 15, ep: 0, gp: 75, pp: 0 },
                     });
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-xs font-medium cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-white hover:bg-stone-100 text-stone-800 border border-[#DDD5C7] text-xs font-medium shadow-sm transition-all"
                 >
-                  Scholar & Mage Loadout
+                  Scholar & Mage Kit
                 </button>
 
                 <button
@@ -1033,14 +1091,8 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
                     const a2 = FIVE_TOOLS_ARMOR.find((a) => a.id === 'a_shield') || FIVE_TOOLS_ARMOR[1];
                     const thievesTools = FIVE_TOOLS_STANDARD_GEAR.find((g) => g.id === 'g_thieves_tools') || FIVE_TOOLS_STANDARD_GEAR[0];
                     update({
-                      weapons: [
-                        { ...w1, equipped: true },
-                        { ...w2, equipped: true },
-                      ],
-                      armor: [
-                        { ...a1, equipped: true },
-                        { ...a2, equipped: true },
-                      ],
+                      weapons: [{ ...w1, equipped: true }, { ...w2, equipped: true }],
+                      armor: [{ ...a1, equipped: true }, { ...a2, equipped: true }],
                       inventory: [
                         thievesTools,
                         { id: 'g_tinker_tools', name: "Tinker's Tools", category: 'Tools', quantity: 1, weight: 10, cost: '50 gp' },
@@ -1049,28 +1101,28 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
                       currency: { cp: 0, sp: 20, ep: 0, gp: 50, pp: 0 },
                     });
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-semibold cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-white hover:bg-stone-100 text-stone-800 border border-[#DDD5C7] text-xs font-medium shadow-sm transition-all"
                 >
-                  Artificer Inventor Loadout
+                  Artificer Kit
                 </button>
               </div>
             </div>
 
             {/* Currently Equipped Weapons & Armor */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3">
-                <div className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+              <div className="p-5 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA] space-y-3">
+                <div className="text-xs font-semibold text-stone-900 uppercase tracking-wider flex items-center justify-between">
                   <span>Selected Weapons ({character.weapons?.length || 0})</span>
-                  <span className="text-[10px] text-slate-500">Toggle equipped or remove</span>
+                  <span className="text-[10px] text-stone-600">Equip or stow</span>
                 </div>
                 {(!character.weapons || character.weapons.length === 0) ? (
-                  <div className="text-xs text-slate-500 italic py-2">No weapons added yet. Pick from the catalog below.</div>
+                  <div className="text-xs text-stone-600 italic py-2">No weapons added yet. Pick from catalog below.</div>
                 ) : (
                   character.weapons.map((w, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-2 rounded bg-slate-900 border border-slate-800 text-xs">
+                    <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-[#E5DFD5] text-xs shadow-sm">
                       <div>
-                        <span className="font-bold text-slate-100">{w.name}</span>
-                        <span className="text-slate-400 ml-2 font-mono">{w.damage} {w.damageType}</span>
+                        <span className="font-semibold text-stone-900">{w.name}</span>
+                        <span className="text-stone-600 ml-2 font-mono">{w.damage} {w.damageType}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <button
@@ -1079,8 +1131,8 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
                             updated[idx].equipped = !updated[idx].equipped;
                             update({ weapons: updated });
                           }}
-                          className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
-                            w.equipped ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'bg-slate-800 text-slate-400'
+                          className={`px-2.5 py-0.5 rounded-md text-[11px] font-medium transition-all ${
+                            w.equipped ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-600'
                           }`}
                         >
                           {w.equipped ? 'Equipped' : 'Stowed'}
@@ -1090,8 +1142,7 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
                             const updated = character.weapons.filter((_, i) => i !== idx);
                             update({ weapons: updated });
                           }}
-                          className="p-1 text-slate-500 hover:text-rose-400 transition-colors"
-                          title="Remove weapon"
+                          className="p-1 text-stone-600 hover:text-stone-900 transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -1101,19 +1152,19 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
                 )}
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3">
-                <div className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center justify-between">
-                  <span>Selected Armor & Shields ({character.armor?.length || 0})</span>
-                  <span className="text-[10px] text-slate-500">Toggle equipped or remove</span>
+              <div className="p-5 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA] space-y-3">
+                <div className="text-xs font-semibold text-stone-900 uppercase tracking-wider flex items-center justify-between">
+                  <span>Selected Armor & Shield ({character.armor?.length || 0})</span>
+                  <span className="text-[10px] text-stone-600">Equip or stow</span>
                 </div>
                 {(!character.armor || character.armor.length === 0) ? (
-                  <div className="text-xs text-slate-500 italic py-2">No armor added yet. Pick from the catalog below.</div>
+                  <div className="text-xs text-stone-600 italic py-2">No armor added yet. Pick from catalog below.</div>
                 ) : (
                   character.armor.map((a, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-2 rounded bg-slate-900 border border-slate-800 text-xs">
+                    <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-[#E5DFD5] text-xs shadow-sm">
                       <div>
-                        <span className="font-bold text-slate-100">{a.name}</span>
-                        <span className="text-slate-400 ml-2">AC {a.ac}</span>
+                        <span className="font-semibold text-stone-900">{a.name}</span>
+                        <span className="text-stone-600 ml-2 font-mono">AC {a.ac}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <button
@@ -1122,8 +1173,8 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
                             updated[idx].equipped = !updated[idx].equipped;
                             update({ armor: updated });
                           }}
-                          className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
-                            a.equipped ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'bg-slate-800 text-slate-400'
+                          className={`px-2.5 py-0.5 rounded-md text-[11px] font-medium transition-all ${
+                            a.equipped ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-600'
                           }`}
                         >
                           {a.equipped ? 'Equipped' : 'Packed'}
@@ -1133,8 +1184,7 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
                             const updated = character.armor.filter((_, i) => i !== idx);
                             update({ armor: updated });
                           }}
-                          className="p-1 text-slate-500 hover:text-rose-400 transition-colors"
-                          title="Remove armor"
+                          className="p-1 text-stone-600 hover:text-stone-900 transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -1145,115 +1195,89 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
               </div>
             </div>
 
-            {/* Direct 5e.tools Equipment Browser */}
-            <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-4">
+            {/* Direct Equipment Browser */}
+            <div className="p-5 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA] space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-amber-300">
-                    5e.tools Catalog
-                  </span>
-                  <div className="flex items-center gap-1 bg-slate-900 p-0.5 rounded-lg border border-slate-800">
+                  <div className="flex items-center gap-1 bg-white p-0.5 rounded-xl border border-[#E0D9CE]">
                     <button
                       onClick={() => setBuilderGearTab('weapons')}
-                      className={`px-2.5 py-1 rounded text-xs font-semibold cursor-pointer ${
-                        builderGearTab === 'weapons' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                        builderGearTab === 'weapons' ? 'bg-stone-900 text-white font-semibold' : 'text-stone-600 hover:text-stone-900'
                       }`}
                     >
-                      Weapons ({FIVE_TOOLS_WEAPONS.length})
+                      Weapons
                     </button>
                     <button
                       onClick={() => setBuilderGearTab('armor')}
-                      className={`px-2.5 py-1 rounded text-xs font-semibold cursor-pointer ${
-                        builderGearTab === 'armor' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                        builderGearTab === 'armor' ? 'bg-stone-900 text-white font-semibold' : 'text-stone-600 hover:text-stone-900'
                       }`}
                     >
-                      Armor & Shields ({FIVE_TOOLS_ARMOR.length})
+                      Armor & Shields
                     </button>
                     <button
                       onClick={() => setBuilderGearTab('gear')}
-                      className={`px-2.5 py-1 rounded text-xs font-semibold cursor-pointer ${
-                        builderGearTab === 'gear' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                        builderGearTab === 'gear' ? 'bg-stone-900 text-white font-semibold' : 'text-stone-600 hover:text-stone-900'
                       }`}
                     >
-                      Gear & Magic Items ({FIVE_TOOLS_STANDARD_GEAR.length})
+                      Standard Gear
                     </button>
                   </div>
                 </div>
 
                 <div className="relative w-full sm:w-64">
-                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-stone-600" />
                   <input
                     type="text"
                     placeholder="Search equipment..."
                     value={builderGearSearch}
                     onChange={(e) => setBuilderGearSearch(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
+                    className="w-full pl-8 pr-3 py-1.5 bg-white border border-[#E5DFD5] rounded-xl text-xs text-stone-900 placeholder-stone-600 focus:outline-none focus:border-stone-400"
                   />
-                  {builderGearSearch && (
-                    <button
-                      onClick={() => setBuilderGearSearch('')}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white text-xs"
-                    >
-                      ×
-                    </button>
-                  )}
                 </div>
               </div>
 
-              {/* Weapons Tab */}
-              {builderGearTab === 'weapons' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-72 overflow-y-auto pr-1">
-                  {FIVE_TOOLS_WEAPONS.filter((w) =>
-                    w.name.toLowerCase().includes(builderGearSearch.toLowerCase()) ||
-                    w.category.toLowerCase().includes(builderGearSearch.toLowerCase())
+              {/* Items Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-72 overflow-y-auto pr-1">
+                {builderGearTab === 'weapons' &&
+                  FIVE_TOOLS_WEAPONS.filter(
+                    (w) =>
+                      w.name.toLowerCase().includes(builderGearSearch.toLowerCase()) ||
+                      w.category.toLowerCase().includes(builderGearSearch.toLowerCase())
                   ).map((w) => {
                     const isAlreadyEquipped = character.weapons?.some((cw) => cw.name === w.name && cw.equipped);
-                    const isAdded = character.weapons?.some((cw) => cw.name === w.name);
-
                     return (
-                      <div
-                        key={w.id}
-                        className="p-3 rounded-lg bg-slate-900 border border-slate-800 flex flex-col justify-between gap-2"
-                      >
+                      <div key={w.id} className="p-3.5 rounded-xl bg-white border border-[#E5DFD5] flex flex-col justify-between gap-2 shadow-sm">
                         <div>
                           <div className="flex items-start justify-between gap-1">
-                            <span className="font-bold text-slate-100 text-xs">{w.name}</span>
-                            <span className="font-mono text-amber-400 text-[11px] font-bold whitespace-nowrap">
+                            <span className="font-semibold text-stone-900 text-xs">{w.name}</span>
+                            <span className="font-mono text-stone-800 text-[11px] font-semibold whitespace-nowrap">
                               {w.damage} {w.damageType}
                             </span>
                           </div>
-                          <div className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-2">
-                            <span>{w.category}</span>
-                            <span>· {w.weight} lbs</span>
-                            <span className="text-amber-500/90">· {w.cost}</span>
+                          <div className="text-[10px] text-stone-600 mt-0.5">
+                            {w.category} · {w.weight} lbs · {w.cost}
                           </div>
-                          {w.properties && w.properties.length > 0 && (
-                            <div className="text-[10px] text-slate-500 mt-1 italic">
-                              {w.properties.join(', ')}
-                            </div>
-                          )}
                         </div>
 
-                        <div className="flex items-center gap-1.5 pt-1.5 border-t border-slate-800/80">
+                        <div className="flex items-center gap-1.5 pt-2 border-t border-[#F0EBE1]">
                           <button
                             onClick={() => {
                               const newW: WeaponItem = { ...w, id: `${w.id}_${Date.now()}`, equipped: true };
                               update({ weapons: [...(character.weapons || []), newW] });
                             }}
-                            className={`flex-1 py-1 px-2 rounded text-[11px] font-semibold transition-colors cursor-pointer ${
-                              isAlreadyEquipped
-                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                                : 'bg-amber-500 text-slate-950 hover:bg-amber-450'
-                            }`}
+                            className="flex-1 py-1 px-2 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-[11px] font-medium transition-all"
                           >
-                            {isAlreadyEquipped ? 'Equipped ✓' : '+ Equip'}
+                            + Equip
                           </button>
                           <button
                             onClick={() => {
                               const newW: WeaponItem = { ...w, id: `${w.id}_${Date.now()}`, equipped: false };
                               update({ weapons: [...(character.weapons || []), newW] });
                             }}
-                            className="py-1 px-2 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 text-[11px] font-medium cursor-pointer"
+                            className="py-1 px-2 rounded-lg bg-[#FAF8F5] hover:bg-[#F2ECE3] text-stone-700 text-[11px] font-medium border border-[#E0D9CE]"
                           >
                             + Stowed
                           </button>
@@ -1261,499 +1285,307 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
                       </div>
                     );
                   })}
-                </div>
-              )}
 
-              {/* Armor Tab */}
-              {builderGearTab === 'armor' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-72 overflow-y-auto pr-1">
-                  {FIVE_TOOLS_ARMOR.filter((a) =>
-                    a.name.toLowerCase().includes(builderGearSearch.toLowerCase()) ||
-                    a.category.toLowerCase().includes(builderGearSearch.toLowerCase())
-                  ).map((a) => {
-                    const isAlreadyEquipped = character.armor?.some((ca) => ca.name === a.name && ca.equipped);
-
-                    return (
-                      <div
-                        key={a.id}
-                        className="p-3 rounded-lg bg-slate-900 border border-slate-800 flex flex-col justify-between gap-2"
-                      >
-                        <div>
-                          <div className="flex items-start justify-between gap-1">
-                            <span className="font-bold text-slate-100 text-xs">{a.name}</span>
-                            <span className="font-mono text-cyan-400 text-[11px] font-bold whitespace-nowrap">
-                              {a.category === 'Shield' ? `+${a.ac} AC` : `AC ${a.ac}`}
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-2 flex-wrap">
-                            <span>{a.category}</span>
-                            <span>· {a.weight} lbs</span>
-                            <span className="text-amber-500/90">· {a.cost}</span>
-                            {a.stealthDisadvantage && <span className="text-rose-400">· Stealth Disadv</span>}
-                          </div>
+                {builderGearTab === 'armor' &&
+                  FIVE_TOOLS_ARMOR.filter(
+                    (a) =>
+                      a.name.toLowerCase().includes(builderGearSearch.toLowerCase()) ||
+                      a.category.toLowerCase().includes(builderGearSearch.toLowerCase())
+                  ).map((a) => (
+                    <div key={a.id} className="p-3.5 rounded-xl bg-white border border-[#E5DFD5] flex flex-col justify-between gap-2 shadow-sm">
+                      <div>
+                        <div className="flex items-start justify-between gap-1">
+                          <span className="font-semibold text-stone-900 text-xs">{a.name}</span>
+                          <span className="font-mono text-[#2E4A3E] text-[11px] font-semibold whitespace-nowrap">
+                            {a.category === 'Shield' ? `+${a.ac} AC` : `AC ${a.ac}`}
+                          </span>
                         </div>
-
-                        <div className="flex items-center gap-1.5 pt-1.5 border-t border-slate-800/80">
-                          <button
-                            onClick={() => {
-                              const newA: ArmorItem = { ...a, id: `${a.id}_${Date.now()}`, equipped: true };
-                              update({ armor: [...(character.armor || []), newA] });
-                            }}
-                            className={`flex-1 py-1 px-2 rounded text-[11px] font-semibold transition-colors cursor-pointer ${
-                              isAlreadyEquipped
-                                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                                : 'bg-cyan-600 text-white hover:bg-cyan-500'
-                            }`}
-                          >
-                            {isAlreadyEquipped ? 'Equipped ✓' : '+ Equip'}
-                          </button>
-                          <button
-                            onClick={() => {
-                              const newA: ArmorItem = { ...a, id: `${a.id}_${Date.now()}`, equipped: false };
-                              update({ armor: [...(character.armor || []), newA] });
-                            }}
-                            className="py-1 px-2 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 text-[11px] font-medium cursor-pointer"
-                          >
-                            + In Pack
-                          </button>
+                        <div className="text-[10px] text-stone-600 mt-0.5">
+                          {a.category} · {a.weight} lbs · {a.cost}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
 
-              {/* Gear & Magic Items Tab */}
-              {builderGearTab === 'gear' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-72 overflow-y-auto pr-1">
-                  {FIVE_TOOLS_STANDARD_GEAR.filter((g) =>
-                    g.name.toLowerCase().includes(builderGearSearch.toLowerCase()) ||
-                    (g.category && g.category.toLowerCase().includes(builderGearSearch.toLowerCase())) ||
-                    (g.description && g.description.toLowerCase().includes(builderGearSearch.toLowerCase()))
-                  ).map((g) => {
-                    const isAdded = character.inventory?.some((cg) => cg.name === g.name);
+                      <div className="flex items-center gap-1.5 pt-2 border-t border-[#F0EBE1]">
+                        <button
+                          onClick={() => {
+                            const newA: ArmorItem = { ...a, id: `${a.id}_${Date.now()}`, equipped: true };
+                            update({ armor: [...(character.armor || []), newA] });
+                          }}
+                          className="flex-1 py-1 px-2 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-[11px] font-medium transition-all"
+                        >
+                          + Equip
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newA: ArmorItem = { ...a, id: `${a.id}_${Date.now()}`, equipped: false };
+                            update({ armor: [...(character.armor || []), newA] });
+                          }}
+                          className="py-1 px-2 rounded-lg bg-[#FAF8F5] hover:bg-[#F2ECE3] text-stone-700 text-[11px] font-medium border border-[#E0D9CE]"
+                        >
+                          + In Pack
+                        </button>
+                      </div>
+                    </div>
+                  ))}
 
-                    return (
-                      <div
-                        key={g.id}
-                        className="p-3 rounded-lg bg-slate-900 border border-slate-800 flex flex-col justify-between gap-2"
-                      >
-                        <div>
-                          <div className="flex items-start justify-between gap-1">
-                            <span className="font-bold text-slate-100 text-xs">{g.name}</span>
-                            <span className="text-[11px] text-amber-400 font-mono">{g.cost || '—'}</span>
-                          </div>
-                          <div className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-2">
-                            <span>{g.category || 'Gear'}</span>
-                            <span>· {g.weight} lbs</span>
-                          </div>
-                          {g.description && (
-                            <div className="text-[10px] text-slate-500 mt-1 line-clamp-2">
-                              {g.description}
-                            </div>
-                          )}
+                {builderGearTab === 'gear' &&
+                  FIVE_TOOLS_STANDARD_GEAR.filter(
+                    (g) =>
+                      g.name.toLowerCase().includes(builderGearSearch.toLowerCase()) ||
+                      (g.category && g.category.toLowerCase().includes(builderGearSearch.toLowerCase()))
+                  ).map((g) => (
+                    <div key={g.id} className="p-3.5 rounded-xl bg-white border border-[#E5DFD5] flex flex-col justify-between gap-2 shadow-sm">
+                      <div>
+                        <div className="flex items-start justify-between gap-1">
+                          <span className="font-semibold text-stone-900 text-xs">{g.name}</span>
+                          <span className="font-mono text-stone-700 text-[11px]">{g.cost || '—'}</span>
                         </div>
-
-                        <div className="pt-1.5 border-t border-slate-800/80">
-                          <button
-                            onClick={() => {
-                              const existing = character.inventory || [];
-                              const matchIndex = existing.findIndex((item) => item.name === g.name);
-                              if (matchIndex >= 0) {
-                                const copy = [...existing];
-                                copy[matchIndex] = {
-                                  ...copy[matchIndex],
-                                  quantity: (copy[matchIndex].quantity || 1) + 1,
-                                };
-                                update({ inventory: copy });
-                              } else {
-                                update({
-                                  inventory: [...existing, { ...g, id: `${g.id}_${Date.now()}` }],
-                                });
-                              }
-                            }}
-                            className="w-full py-1 px-2 rounded bg-slate-800 hover:bg-slate-750 text-slate-200 text-[11px] font-semibold flex items-center justify-center gap-1 cursor-pointer transition-colors"
-                          >
-                            <Plus className="w-3 h-3 text-amber-400" />
-                            <span>{isAdded ? 'Add Another (+1)' : 'Add to Pack'}</span>
-                          </button>
+                        <div className="text-[10px] text-stone-600 mt-0.5">
+                          {g.category || 'Gear'} · {g.weight} lbs
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+
+                      <div className="pt-2 border-t border-[#F0EBE1]">
+                        <button
+                          onClick={() => {
+                            const existing = character.inventory || [];
+                            const matchIndex = existing.findIndex((item) => item.name === g.name);
+                            if (matchIndex >= 0) {
+                              const copy = [...existing];
+                              copy[matchIndex] = {
+                                ...copy[matchIndex],
+                                quantity: (copy[matchIndex].quantity || 1) + 1,
+                              };
+                              update({ inventory: copy });
+                            } else {
+                              update({
+                                inventory: [...existing, { ...g, id: `${g.id}_${Date.now()}` }],
+                              });
+                            }
+                          }}
+                          className="w-full py-1 px-2 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-[11px] font-medium transition-all"
+                        >
+                          + Add to Pack
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
             </div>
           </div>
         )}
 
-
-        {/* STEP 6: SPELLS */}
+        {/* STEP 6: GRIMOIRE (Spells & Cantrips) */}
         {currentStep.id === 'spells' && (() => {
           const maxSpellLevel = getMaxSpellLevel(character.className, character.level);
           const isCaster = isSpellcastingClass(character.className);
           const slots = getClassSpellSlots(character.className, character.level);
-          const invalidSpells = (character.spells || []).filter((s) => s.level > maxSpellLevel);
 
-          // Filter spells list
           const filteredSpells = FIVE_TOOLS_SPELLS.filter((sp) => {
             const matchesSearch =
-              !spellSearch ||
               sp.name.toLowerCase().includes(spellSearch.toLowerCase()) ||
-              sp.school.toLowerCase().includes(spellSearch.toLowerCase()) ||
-              (sp.damageType && sp.damageType.toLowerCase().includes(spellSearch.toLowerCase()));
+              sp.school.toLowerCase().includes(spellSearch.toLowerCase());
 
-            if (!matchesSearch) return false;
+            const matchesClass = filterClassOnly
+              ? sp.classes?.some((c) => c.toLowerCase() === character.className.toLowerCase())
+              : true;
 
-            if (filterClassOnly && isCaster) {
-              const onList = sp.classes?.some((c) => c.toLowerCase() === character.className.toLowerCase());
-              const isAlreadyKnown = character.spells?.some((s) => s.id === sp.id);
-              if (!onList && !isAlreadyKnown) return false;
-            }
+            const matchesLevel =
+              spellLevelFilter === 'all'
+                ? true
+                : spellLevelFilter === 'eligible'
+                ? sp.level <= maxSpellLevel
+                : spellLevelFilter === 'cantrip'
+                ? sp.level === 0
+                : sp.level === parseInt(spellLevelFilter);
 
-            if (spellLevelFilter === 'eligible') {
-              return sp.level <= maxSpellLevel;
-            } else if (spellLevelFilter === '0') {
-              return sp.level === 0;
-            } else if (spellLevelFilter === '1') {
-              return sp.level === 1;
-            } else if (spellLevelFilter === '2') {
-              return sp.level === 2;
-            } else if (spellLevelFilter === '3') {
-              return sp.level === 3;
-            } else if (spellLevelFilter === '4+') {
-              return sp.level >= 4;
-            }
-
-            return true;
+            return matchesSearch && matchesClass && matchesLevel;
           });
 
           return (
             <div className="space-y-6">
-              {/* Header with Caster Level & Slot Info */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h3 className="font-serif text-xl font-bold text-amber-100 flex items-center gap-2">
-                    <span>Spells & Grimoire</span>
-                    <span className="text-xs font-sans px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                      Level {character.level} {character.className}
-                    </span>
+                  <h3 className="font-serif text-2xl font-semibold text-stone-900">
+                    Spell Grimoire & Cantrips
                   </h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Select cantrips and prepared spells for your grimoire. Spell options are dynamically restricted by your class and spell slot availability.
+                  <p className="text-xs text-stone-600 mt-1">
+                    {isCaster
+                      ? `Select prepared spells and cantrips. Max spell level for Level ${character.level} ${character.className}: ${maxSpellLevel === 0 ? 'Cantrips only' : `Level ${maxSpellLevel}`}.`
+                      : `${character.className} is not a primary spellcasting class, but you may browse or add custom magical spells.`}
                   </p>
                 </div>
 
-                {/* Spell Slots Chips */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <div className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs">
-                    <span className="text-slate-400 mr-1.5">Max Spell Level:</span>
-                    <span className={`font-mono font-bold ${maxSpellLevel > 0 ? 'text-amber-400' : 'text-slate-500'}`}>
-                      {maxSpellLevel > 0 ? `Level ${maxSpellLevel}` : 'No Slots'}
+                {isCaster && (
+                  <div className="flex items-center gap-2 bg-[#FAF8F5] px-3 py-1.5 rounded-xl border border-[#E5DFD5]">
+                    <span className="text-xs text-stone-600 font-medium">Prepared:</span>
+                    <span className="text-xs font-mono font-bold text-stone-900 tabular-nums">
+                      {(character.spells || []).length} Spells
                     </span>
                   </div>
-
-                  {maxSpellLevel > 0 && (
-                    <div className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs">
-                      <span className="text-slate-400 mr-1.5">Available Slots:</span>
-                      <span className="font-mono font-bold text-cyan-400">
-                        {slots.slice(0, maxSpellLevel).map((s, i) => `${i + 1}st:${s}`).join(', ')}
-                      </span>
-                    </div>
-                  )}
-
-                  {isCaster && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const starters = getStartingSpellsForClass(character.className);
-                        update({
-                          spells: starters,
-                        });
-                        setSpellNotice(`Populated authentic 5e starting Cantrips & 1st-level spells for ${character.className}!`);
-                        setTimeout(() => setSpellNotice(null), 3500);
-                      }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-sm transition-all cursor-pointer"
-                    >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>Auto-Fill Starter Spells</span>
-                    </button>
-                  )}
-                </div>
+                )}
               </div>
 
-              {/* Ineligible spells warning banner (e.g. if user downgraded level) */}
-              {invalidSpells.length > 0 && (
-                <div className="p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/40 text-xs flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5 text-rose-300">
-                    <AlertTriangle className="w-5 h-5 shrink-0 text-rose-400" />
-                    <div>
-                      <span className="font-bold">Ineligible Spells Detected: </span>
-                      <span>
-                        Your character has {invalidSpells.length} spell(s) above Level {maxSpellLevel} ({invalidSpells.map((s) => s.name).join(', ')}). A Level {character.level} {character.className} cannot cast these.
-                      </span>
+              {/* Optimal Grimoire Banner for Casters */}
+              {isCaster && (
+                <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <div className="text-xs font-semibold text-stone-900 flex items-center gap-2">
+                      <Wand2 className="w-3.5 h-3.5 text-[#B85D36]" />
+                      <span>Optimal Grimoire Pre-Selected for {character.className}</span>
+                    </div>
+                    <div className="text-[11px] text-stone-600 mt-0.5">
+                      Class-curated starter cantrips and 1st-level spells are pre-loaded so your spellcaster is adventure-ready immediately.
                     </div>
                   </div>
-
                   <button
+                    type="button"
                     onClick={() => {
-                      update({
-                        spells: (character.spells || []).filter((s) => s.level <= maxSpellLevel),
-                      });
-                      setSpellNotice(`Removed ${invalidSpells.length} ineligible spell(s) from character.`);
-                      setTimeout(() => setSpellNotice(null), 3500);
+                      const optSpells = getStartingSpellsForClass(character.className);
+                      update({ spells: optSpells });
                     }}
-                    className="px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs whitespace-nowrap cursor-pointer transition-colors"
+                    className="px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium transition-all shadow-sm flex items-center gap-1.5 self-start sm:self-auto shrink-0"
                   >
-                    Remove Ineligible Spells
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset to Optimal Spells</span>
                   </button>
                 </div>
               )}
 
-              {/* Non-caster or Half-caster explanation notice */}
-              {!isCaster && (
-                <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300 flex items-start gap-2.5">
-                  <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold text-slate-100">{character.className}s are martial/non-spellcasting by default. </span>
-                    <span>
-                      Cantrips can still be chosen if granted by your race (e.g. High Elf, Tiefling) or feats. Subclasses like Eldritch Knight or Arcane Trickster unlock spells at Level 3.
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {isCaster && maxSpellLevel === 0 && (
-                <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 flex items-start gap-2.5">
-                  <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold">Level 1 {character.className}s have no spell slots yet! </span>
-                    <span>
-                      {character.className}s unlock 1st-level spellcasting starting at Level 2. Higher level spells remain locked until higher levels are achieved.
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Feedback toast / restriction notice */}
-              {spellNotice && (
-                <div className="p-3 rounded-lg bg-amber-500/20 border border-amber-500/40 text-xs text-amber-300 flex items-center justify-between gap-2 animate-in fade-in">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                    <span>{spellNotice}</span>
-                  </div>
-                  <button
-                    onClick={() => setSpellNotice(null)}
-                    className="text-amber-400 hover:text-white text-xs font-bold px-1"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
-
-              {/* Search, Filter Tabs & Class Toggle */}
-              <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-3">
-                {/* Search */}
-                <div className="relative w-full md:w-64">
-                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
-                  <input
-                    type="text"
-                    placeholder="Search spells (name, school, damage)..."
-                    value={spellSearch}
-                    onChange={(e) => setSpellSearch(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
-                  />
-                  {spellSearch && (
+              {/* Spell filters bar */}
+              <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                  {['eligible', 'cantrip', '1', '2', '3', 'all'].map((lvl) => (
                     <button
-                      onClick={() => setSpellSearch('')}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white text-xs"
+                      key={lvl}
+                      onClick={() => setSpellLevelFilter(lvl)}
+                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                        spellLevelFilter === lvl
+                          ? 'bg-stone-900 text-white font-semibold shadow-sm'
+                          : 'bg-white border border-[#E0D9CE] text-stone-700 hover:border-stone-400'
+                      }`}
                     >
-                      ×
+                      {lvl === 'eligible' ? 'Eligible' : lvl === 'cantrip' ? 'Cantrips' : lvl === 'all' ? 'All' : `Lvl ${lvl}`}
                     </button>
-                  )}
+                  ))}
                 </div>
 
-                {/* Level Tabs */}
-                <div className="flex items-center gap-1 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
-                  {[
-                    { id: 'eligible', label: maxSpellLevel > 0 ? `Eligible (0–${maxSpellLevel})` : 'Eligible' },
-                    { id: '0', label: 'Cantrips (0)' },
-                    { id: '1', label: '1st Level' },
-                    { id: '2', label: '2nd Level' },
-                    { id: '3', label: '3rd Level' },
-                    { id: '4+', label: '4th+ Level' },
-                    { id: 'all', label: 'All Spells' },
-                  ].map((tab) => {
-                    const isActive = spellLevelFilter === tab.id;
-                    const tabLvl = parseInt(tab.id);
-                    const isTabAboveCap = !isNaN(tabLvl) && tabLvl > maxSpellLevel && isCaster;
-
-                    return (
-                      <button
-                        key={tab.id}
-                        onClick={() => setSpellLevelFilter(tab.id)}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap flex items-center gap-1 cursor-pointer transition-colors ${
-                          isActive
-                            ? 'bg-amber-500 text-slate-950'
-                            : 'bg-slate-900 text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        {isTabAboveCap && <Lock className="w-2.5 h-2.5 opacity-60" />}
-                        <span>{tab.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Class Only Checkbox */}
-                {isCaster && (
-                  <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer self-start md:self-auto select-none">
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-stone-700 flex items-center gap-1.5 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={filterClassOnly}
                       onChange={(e) => setFilterClassOnly(e.target.checked)}
-                      className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 cursor-pointer"
+                      className="rounded border-stone-300 text-stone-900 focus:ring-stone-900/10"
                     />
-                    <span>Only {character.className} spells</span>
+                    <span>{character.className} only</span>
                   </label>
-                )}
+
+                  <div className="relative w-48">
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-stone-600" />
+                    <input
+                      type="text"
+                      placeholder="Search spells..."
+                      value={spellSearch}
+                      onChange={(e) => setSpellSearch(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1 bg-white border border-[#E5DFD5] rounded-xl text-xs text-stone-900 placeholder-stone-600 focus:outline-none focus:border-stone-400"
+                    />
+                  </div>
+                </div>
               </div>
 
-              {/* Grid of Spells with Lock Enforcements */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[500px] overflow-y-auto pr-1">
+              {/* Spells Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-80 overflow-y-auto pr-1">
                 {filteredSpells.map((sp) => {
-                  const isKnown = character.spells?.some((s) => s.id === sp.id);
-                  const eligibility = isSpellEligible(sp, character.className, character.level);
-                  const isLocked = !eligibility.eligible && eligibility.isHigherLevel;
-
-                  const handleToggleSpell = () => {
-                    if (isKnown) {
-                      update({
-                        spells: character.spells.filter((s) => s.id !== sp.id),
-                      });
-                      return;
-                    }
-
-                    // Enforce restriction!
-                    if (isLocked) {
-                      setSpellNotice(
-                        `Cannot learn "${sp.name}" (Level ${sp.level}): A Level ${character.level} ${character.className} can only cast up to Level ${maxSpellLevel} spells.`
-                      );
-                      setTimeout(() => setSpellNotice(null), 4000);
-                      return;
-                    }
-
-                    update({
-                      spells: [...(character.spells || []), { ...sp, prepared: true }],
-                    });
-                  };
+                  const isAdded = (character.spells || []).some((s) => s.name === sp.name);
+                  const isLocked = isSpellcastingClass(character.className) && sp.level > maxSpellLevel;
 
                   return (
                     <div
                       key={sp.id}
-                      onClick={handleToggleSpell}
-                      className={`p-3.5 rounded-xl border transition-all ${
-                        isKnown
-                          ? 'bg-amber-500/15 border-amber-500 text-amber-200 cursor-pointer shadow-sm'
-                          : isLocked
-                          ? 'bg-slate-950/40 border-slate-800/60 opacity-65 hover:border-rose-500/50 cursor-not-allowed'
-                          : 'bg-slate-950/70 border-slate-800 hover:border-slate-700 text-slate-300 cursor-pointer'
+                      className={`p-3.5 rounded-xl border flex flex-col justify-between gap-2 shadow-sm transition-all ${
+                        isLocked
+                          ? 'bg-stone-50 border-stone-200 opacity-60'
+                          : isAdded
+                          ? 'bg-white border-stone-900 ring-1 ring-stone-900/10'
+                          : 'bg-white border-[#E5DFD5]'
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-sm text-slate-100">{sp.name}</span>
-                          {isLocked && (
-                            <span className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                              <Lock className="w-2.5 h-2.5" />
-                              <span>Level {sp.level} Locked</span>
-                            </span>
-                          )}
-                          {isKnown && (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500 text-slate-950">
-                              Selected ✓
-                            </span>
-                          )}
-                        </div>
-
-                        <span className="text-[11px] font-mono text-amber-300 whitespace-nowrap">
-                          {sp.level === 0 ? 'Cantrip' : `Level ${sp.level}`}
-                        </span>
-                      </div>
-
-                      <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
-                        <span>{sp.school}</span>
-                        <span>· {sp.castingTime}</span>
-                        <span>· {sp.range}</span>
-                        {sp.damage && (
-                          <span className="text-amber-400/90 font-mono">· {sp.damage} {sp.damageType || ''}</span>
-                        )}
-                        {sp.classes && sp.classes.length > 0 && (
-                          <span className="text-slate-500 text-[10px]">
-                            ({sp.classes.join(', ')})
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="text-[11px] text-slate-300 mt-2 line-clamp-2 leading-relaxed">
-                        {clean5eToolsText(sp.description)}
-                      </div>
-
-                      {isLocked && (
-                        <div className="mt-2 text-[10px] text-rose-400 font-medium flex items-center gap-1 bg-rose-950/30 px-2 py-1 rounded border border-rose-900/40">
-                          <Lock className="w-3 h-3 text-rose-400 shrink-0" />
-                          <span>
-                            Unlocks at higher level (Level {character.level} {character.className} max: Level {maxSpellLevel})
+                      <div>
+                        <div className="flex items-start justify-between gap-1">
+                          <span className="font-semibold text-stone-900 text-xs">{sp.name}</span>
+                          <span className="font-mono text-xs font-semibold text-[#B85D36]">
+                            {sp.level === 0 ? 'Cantrip' : `Level ${sp.level}`}
                           </span>
                         </div>
-                      )}
+                        <div className="text-[10px] text-stone-600 mt-0.5">
+                          {sp.school} · {sp.castingTime} · {sp.range}
+                        </div>
+                        <div className="text-[11px] text-stone-600 mt-1 line-clamp-2 leading-relaxed">
+                          {sp.description}
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-[#F0EBE1] flex items-center justify-between">
+                        {isAdded ? (
+                          <button
+                            onClick={() => {
+                              const updated = (character.spells || []).filter((s) => s.name !== sp.name);
+                              update({ spells: updated });
+                            }}
+                            className="w-full py-1 px-2 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-800 text-[11px] font-medium transition-all"
+                          >
+                            Remove from Grimoire
+                          </button>
+                        ) : (
+                          <button
+                            disabled={isLocked}
+                            onClick={() => {
+                              update({ spells: [...(character.spells || []), { ...sp, prepared: true }] });
+                            }}
+                            className="w-full py-1 px-2 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-[11px] font-medium transition-all disabled:opacity-30"
+                          >
+                            {isLocked ? 'Level Locked' : '+ Add to Grimoire'}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
               </div>
-
-              {filteredSpells.length === 0 && (
-                <div className="text-center py-10 text-slate-400 space-y-2">
-                  <p className="text-sm font-semibold">No spells match the current filters.</p>
-                  <p className="text-xs text-slate-500">
-                    Try unchecking "Only {character.className} spells" or switching the level filter tab.
-                  </p>
-                </div>
-              )}
             </div>
           );
         })()}
 
-
-        {/* STEP 7: REVIEW & EXPORT */}
+        {/* STEP 7: CHRONICLE (Review & PDF Export) */}
         {currentStep.id === 'review' && (
           <div className="space-y-6">
             <div>
-              <h3 className="font-serif text-xl font-bold text-amber-100">
-                Character Summary & PDF Generation
+              <h3 className="font-serif text-2xl font-semibold text-stone-900">
+                Hero Chronicle & Character Sheet
               </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                Verify your stats, customize your character's name, and generate the fillable PDF sheet.
+              <p className="text-xs text-stone-600 mt-1">
+                Your character is complete. Confirm final details and download the official fillable PDF sheet.
               </p>
             </div>
 
-            {/* Name & Player input */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-slate-950/60 border border-slate-800">
+            {/* Name and Player details */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 rounded-xl bg-[#FAF8F5] border border-[#E8E3DA]">
               <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">
+                <label className="text-xs font-semibold text-stone-900 block mb-1">
                   Character Name
                 </label>
                 <input
                   type="text"
                   value={character.name}
                   onChange={(e) => update({ name: e.target.value })}
-                  placeholder="Hero's Name"
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm font-serif font-bold text-slate-100 focus:outline-none focus:border-amber-500/60"
+                  placeholder="Hero's Full Name"
+                  className="w-full px-3 py-2 bg-white border border-[#E5DFD5] rounded-xl text-sm font-serif font-semibold text-stone-900 focus:outline-none focus:border-stone-400"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">
+                <label className="text-xs font-semibold text-stone-900 block mb-1">
                   Player Name
                 </label>
                 <input
@@ -1761,71 +1593,71 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
                   value={character.playerName}
                   onChange={(e) => update({ playerName: e.target.value })}
                   placeholder="Your Name"
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-amber-500/60"
+                  className="w-full px-3 py-2 bg-white border border-[#E5DFD5] rounded-xl text-sm text-stone-900 focus:outline-none focus:border-stone-400"
                 />
               </div>
             </div>
 
-            {/* Core Stats Overview Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
-              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-center">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Armor Class</span>
-                <span className="text-2xl font-mono font-black text-amber-400 tabular-nums">
+            {/* Core Stats Overview */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+              <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E5DFD5] text-center shadow-sm">
+                <span className="text-[10px] uppercase font-semibold text-stone-600 block">Armor Class</span>
+                <span className="text-2xl font-mono font-bold text-stone-900 tabular-nums">
                   {calculateArmorClass(character.armor, totalAbilities.dex)}
                 </span>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-center">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Hit Points</span>
-                <span className="text-2xl font-mono font-black text-emerald-400 tabular-nums">
+              <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E5DFD5] text-center shadow-sm">
+                <span className="text-[10px] uppercase font-semibold text-stone-600 block">Max HP</span>
+                <span className="text-2xl font-mono font-bold text-[#2E4A3E] tabular-nums">
                   {character.hpMax}
                 </span>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-center">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Initiative</span>
-                <span className="text-2xl font-mono font-black text-slate-200 tabular-nums">
+              <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E5DFD5] text-center shadow-sm">
+                <span className="text-[10px] uppercase font-semibold text-stone-600 block">Initiative</span>
+                <span className="text-2xl font-mono font-bold text-stone-900 tabular-nums">
                   {formatModifier(getAbilityModifier(totalAbilities.dex))}
                 </span>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-center">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Speed</span>
-                <span className="text-2xl font-mono font-black text-slate-200 tabular-nums">
+              <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E5DFD5] text-center shadow-sm">
+                <span className="text-[10px] uppercase font-semibold text-stone-600 block">Speed</span>
+                <span className="text-2xl font-mono font-bold text-stone-900 tabular-nums">
                   {character.speed} ft
                 </span>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-center">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Prof Bonus</span>
-                <span className="text-2xl font-mono font-black text-amber-300 tabular-nums">
+              <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E5DFD5] text-center shadow-sm">
+                <span className="text-[10px] uppercase font-semibold text-stone-600 block">Prof Bonus</span>
+                <span className="text-2xl font-mono font-bold text-[#B85D36] tabular-nums">
                   {formatModifier(getProficiencyBonus(character.level))}
                 </span>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-center">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Passive Perc</span>
-                <span className="text-2xl font-mono font-black text-slate-200 tabular-nums">
+              <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E5DFD5] text-center shadow-sm">
+                <span className="text-[10px] uppercase font-semibold text-stone-600 block">Passive Perc</span>
+                <span className="text-2xl font-mono font-bold text-stone-900 tabular-nums">
                   {calculatePassivePerception(totalAbilities, character.skillProficiencies, character.skillExpertise, getProficiencyBonus(character.level))}
                 </span>
               </div>
             </div>
 
-            {/* Primary Action Buttons */}
-            <div className="p-6 rounded-xl bg-gradient-to-r from-amber-500/10 via-slate-900 to-amber-500/10 border border-amber-500/30 flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <h4 className="font-serif text-lg font-bold text-amber-200">
-                  Ready to Play & Export
+            {/* Primary Action Card */}
+            <div className="p-6 rounded-2xl bg-[#FAF8F5] border border-[#E8E3DA] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-sm">
+              <div className="space-y-1">
+                <h4 className="font-serif text-lg font-semibold text-stone-900">
+                  Ready for Adventure
                 </h4>
-                <p className="text-xs text-slate-300 mt-1 max-w-md">
-                  Your character sheet is fully calculated and ready. Export as a standard 3-page fillable PDF or dive into the digital sheet.
+                <p className="text-xs text-stone-600 max-w-md leading-relaxed">
+                  Export as a standard 3-page fillable PDF character sheet with all AcroForm fields populated, or explore in the live interactive digital sheet.
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 shrink-0">
                 <button
                   onClick={onSwitchToSheet}
-                  className="px-5 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors"
+                  className="px-4 py-2.5 rounded-xl bg-white hover:bg-stone-100 text-stone-800 border border-[#DDD5C7] text-xs font-semibold shadow-sm transition-all"
                 >
                   Open Digital Sheet
                 </button>
@@ -1833,10 +1665,10 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
                 <button
                   onClick={onExportPdf}
                   disabled={isExportingPdf}
-                  className="px-6 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-450 active:bg-amber-600 text-slate-950 text-xs font-bold transition-all shadow-md shadow-amber-500/20 flex items-center gap-2 disabled:opacity-60"
+                  className="px-5 py-2.5 rounded-xl bg-[#B85D36] hover:bg-[#A34A25] active:bg-[#8F3E1D] text-white text-xs font-semibold shadow-sm transition-all flex items-center gap-2 disabled:opacity-60"
                 >
                   <FileDown className="w-4 h-4" />
-                  <span>{isExportingPdf ? 'Exporting PDF...' : 'Download Fillable PDF'}</span>
+                  <span>{isExportingPdf ? 'Exporting...' : 'Export Fillable PDF'}</span>
                 </button>
               </div>
             </div>
@@ -1844,12 +1676,12 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
         )}
       </div>
 
-      {/* Builder Footer Navigation (Prev / Next) */}
+      {/* 4. Bottom Navigation Controls */}
       <div className="flex items-center justify-between pt-2">
         <button
           onClick={() => setCurrentStepIndex((prev) => Math.max(0, prev - 1))}
           disabled={currentStepIndex === 0}
-          className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 text-xs font-semibold flex items-center gap-1.5 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+          className="px-4 py-2.5 rounded-xl bg-white hover:bg-stone-50 text-stone-700 border border-[#DDD5C7] text-xs font-semibold flex items-center gap-1.5 disabled:opacity-30 disabled:pointer-events-none transition-all shadow-sm"
         >
           <ChevronLeft className="w-4 h-4" />
           <span>Previous Step</span>
@@ -1858,7 +1690,7 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
         {currentStepIndex < STEPS.length - 1 ? (
           <button
             onClick={() => setCurrentStepIndex((prev) => Math.min(STEPS.length - 1, prev + 1))}
-            className="px-5 py-2 rounded-lg bg-amber-500 hover:bg-amber-450 text-slate-950 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
+            className="px-5 py-2.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
           >
             <span>Next Step</span>
             <ChevronRight className="w-4 h-4" />
@@ -1866,7 +1698,7 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
         ) : (
           <button
             onClick={onSwitchToSheet}
-            className="px-5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-450 text-slate-950 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
+            className="px-5 py-2.5 rounded-xl bg-[#2E4A3E] hover:bg-[#243B31] text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
           >
             <span>View Full Character Sheet</span>
             <ChevronRight className="w-4 h-4" />
@@ -1884,5 +1716,3 @@ export const BuilderView: React.FC<BuilderViewProps> = ({
     </div>
   );
 };
-
-

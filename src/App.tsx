@@ -153,7 +153,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950">
+    <div className="min-h-screen bg-[#FAF8F5] text-stone-900 flex flex-col font-sans selection:bg-[#EBD6CA] selection:text-stone-900">
       {/* App Header */}
       <Header
         activeTab={activeTab}
@@ -190,21 +190,28 @@ export default function App() {
         )}
 
         {activeTab === 'compendium' && (
-          <div className="max-w-6xl mx-auto px-4 py-8">
-            <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center space-y-4">
-              <BookOpen className="w-12 h-12 text-amber-400 mx-auto" />
-              <h2 className="font-serif text-2xl font-bold text-slate-100">
-                5e.tools Data Compendium
-              </h2>
-              <p className="text-sm text-slate-400 max-w-lg mx-auto">
-                Explore races, classes, backgrounds, feats, spells, and equipment with full 5e.tools data schemas and direct character sheet integration.
-              </p>
-              <button
-                onClick={() => setIsCompendiumOpen(true)}
-                className="px-6 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-450 text-slate-950 font-bold text-xs inline-flex items-center gap-2 transition-all shadow-md shadow-amber-500/20"
-              >
-                <span>Launch Interactive Compendium</span>
-              </button>
+          <div className="max-w-4xl mx-auto px-4 py-12">
+            <div className="p-10 rounded-2xl bg-white border border-[#E5DFD5] shadow-sm text-center space-y-5">
+              <div className="w-12 h-12 rounded-full bg-[#F5EFE6] border border-[#DDD5C7] text-[#B85D36] flex items-center justify-center mx-auto">
+                <BookOpen className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h2 className="font-serif text-3xl font-semibold text-stone-900 tracking-tight">
+                  5e.tools Data Compendium
+                </h2>
+                <p className="text-sm text-stone-600 max-w-md mx-auto">
+                  Direct access to complete SRD and 5e.tools rules, lineages, subclasses, spells, and equipment.
+                </p>
+              </div>
+              <div className="pt-2">
+                <button
+                  onClick={() => setIsCompendiumOpen(true)}
+                  className="px-5 py-2.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white font-medium text-xs inline-flex items-center gap-2 shadow-sm transition-all"
+                >
+                  <Sparkles className="w-4 h-4 text-[#EBD6CA]" />
+                  <span>Open Interactive Compendium</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -214,23 +221,23 @@ export default function App() {
       <div className="fixed bottom-6 right-6 z-30">
         <button
           onClick={() => setIsDiceModalOpen(true)}
-          className="w-13 h-13 rounded-full bg-gradient-to-tr from-amber-600 to-amber-400 hover:from-amber-500 hover:to-amber-300 text-slate-950 shadow-xl shadow-amber-500/25 flex items-center justify-center transition-all hover:scale-105 active:scale-95 group"
+          className="h-12 w-12 rounded-full bg-white hover:bg-[#FDFBF7] text-stone-800 border border-[#DDD5C7] shadow-lg hover:shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 group"
           title="Open Dice Roller (d20, d12, d10, d8, d6, d4, d100)"
         >
-          <Dices className="w-6 h-6 transition-transform group-hover:rotate-12" />
+          <Dices className="w-5 h-5 text-[#B85D36] transition-transform group-hover:rotate-12" />
         </button>
       </div>
 
       {/* Quick Roll Toast Notification */}
       {activeToast && (
-        <div className="fixed bottom-6 left-6 z-50 bg-slate-900 border border-amber-500/50 rounded-xl px-4 py-3 shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom duration-200">
-          <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400">
+        <div className="fixed bottom-6 left-6 z-50 bg-white border border-[#E0D9CE] rounded-xl px-4 py-3 shadow-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom duration-200">
+          <div className="w-7 h-7 rounded-lg bg-[#F5EFE6] text-[#B85D36] flex items-center justify-center">
             <Sparkles className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-xs font-bold text-slate-100">{activeToast.message}</div>
+            <div className="text-xs font-semibold text-stone-900">{activeToast.message}</div>
             {activeToast.sub && (
-              <div className="text-[11px] text-slate-400 font-mono">{activeToast.sub}</div>
+              <div className="text-[11px] text-stone-600 font-mono">{activeToast.sub}</div>
             )}
           </div>
         </div>

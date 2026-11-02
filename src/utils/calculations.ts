@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AbilityName, AbilityScores, Character, SkillName, SKILLS_LIST, Spell } from '../types/character';
+import { AbilityName, AbilityScores, ArmorItem, Character, GearItem, SkillName, SKILLS_LIST, Spell, WeaponItem } from '../types/character';
 import { FIVE_TOOLS_SPELLS } from '../data/spells';
+import { FIVE_TOOLS_WEAPONS, FIVE_TOOLS_ARMOR, FIVE_TOOLS_STANDARD_GEAR } from '../data/equipment';
 
 export function getAbilityModifier(score: number): number {
   return Math.floor((score - 10) / 2);
@@ -351,4 +352,128 @@ export function getStartingSpellsForClass(className: string): Spell[] {
     .filter((sp) => spellNames.some((n) => n.toLowerCase() === sp.name.toLowerCase()))
     .map((sp) => ({ ...sp, prepared: true }));
 }
+
+export interface OptimalArmoryLoadout {
+  weapons: WeaponItem[];
+  armor: ArmorItem[];
+  inventory: GearItem[];
+  currency: { cp: number; sp: number; ep: number; gp: number; pp: number };
+}
+
+/**
+ * Provides authentic 5e optimal starting weapons, armor, adventuring gear, and currency for any class.
+ */
+export function getOptimalArmoryForClass(className: string): OptimalArmoryLoadout {
+  const norm = className.toLowerCase().trim();
+
+  const getW = (id: string, equipped = true): WeaponItem | undefined => {
+    const found = FIVE_TOOLS_WEAPONS.find((w) => w.id === id);
+    return found ? { ...found, id: `${id}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`, equipped } : undefined;
+  };
+
+  const getA = (id: string, equipped = true): ArmorItem | undefined => {
+    const found = FIVE_TOOLS_ARMOR.find((a) => a.id === id);
+    return found ? { ...found, id: `${id}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`, equipped } : undefined;
+  };
+
+  const getG = (id: string, qty = 1): GearItem | undefined => {
+    const found = FIVE_TOOLS_STANDARD_GEAR.find((g) => g.id === id);
+    return found ? { ...found, id: `${id}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`, quantity: qty } : undefined;
+  };
+
+  const standardPacks: Record<string, {
+    weapons: (WeaponItem | undefined)[];
+    armor: (ArmorItem | undefined)[];
+    gear: (GearItem | undefined)[];
+    currency: { cp: number; sp: number; ep: number; gp: number; pp: number };
+  }> = {
+    barbarian: {
+      weapons: [getW('w_greataxe', true), getW('w_handaxe', true), getW('w_javelin', false)],
+      armor: [],
+      gear: [getG('g_backpack'), getG('g_bedroll'), getG('g_mess_kit'), getG('g_tinderbox'), getG('g_torches', 10), getG('g_rations', 10), getG('g_waterskin'), getG('g_hempen_rope')],
+      currency: { cp: 0, sp: 20, ep: 0, gp: 10, pp: 0 },
+    },
+    bard: {
+      weapons: [getW('w_rapier', true), getW('w_dagger', true)],
+      armor: [getA('a_leather', true)],
+      gear: [getG('g_backpack'), getG('g_bedroll'), getG('g_musical_lute'), getG('g_disguise_kit'), getG('g_rations', 5), getG('g_waterskin')],
+      currency: { cp: 0, sp: 20, ep: 0, gp: 15, pp: 0 },
+    },
+    cleric: {
+      weapons: [getW('w_warhammer', true), getW('w_light_crossbow', false)],
+      armor: [getA('a_scale_mail', true), getA('a_shield', true)],
+      gear: [getG('g_backpack'), getG('g_holy_symbol'), getG('g_bedroll'), getG('g_rations', 10), getG('g_waterskin'), getG('g_crossbow_bolts', 20)],
+      currency: { cp: 0, sp: 20, ep: 0, gp: 15, pp: 0 },
+    },
+    druid: {
+      weapons: [getW('w_scimitar', true)],
+      armor: [getA('a_leather', true), getA('a_shield', true)],
+      gear: [getG('g_backpack'), getG('g_druidic_focus'), getG('g_herbalism_kit'), getG('g_bedroll'), getG('g_rations', 10), getG('g_waterskin')],
+      currency: { cp: 0, sp: 20, ep: 0, gp: 10, pp: 0 },
+    },
+    fighter: {
+      weapons: [getW('w_longsword', true), getW('w_heavy_crossbow', false)],
+      armor: [getA('a_chain_mail', true), getA('a_shield', true)],
+      gear: [getG('g_backpack'), getG('g_crowbar'), getG('g_tinderbox'), getG('g_torches', 10), getG('g_rations', 10), getG('g_waterskin'), getG('g_hempen_rope'), getG('g_crossbow_bolts', 20)],
+      currency: { cp: 0, sp: 20, ep: 0, gp: 25, pp: 0 },
+    },
+    monk: {
+      weapons: [getW('w_shortsword', true), getW('w_dart', false)],
+      armor: [],
+      gear: [getG('g_backpack'), getG('g_bedroll'), getG('g_mess_kit'), getG('g_tinderbox'), getG('g_torches', 10), getG('g_rations', 10), getG('g_waterskin'), getG('g_hempen_rope')],
+      currency: { cp: 0, sp: 10, ep: 0, gp: 10, pp: 0 },
+    },
+    paladin: {
+      weapons: [getW('w_longsword', true), getW('w_javelin', false)],
+      armor: [getA('a_chain_mail', true), getA('a_shield', true)],
+      gear: [getG('g_backpack'), getG('g_holy_symbol'), getG('g_bedroll'), getG('g_mess_kit'), getG('g_rations', 10), getG('g_waterskin'), getG('g_hempen_rope')],
+      currency: { cp: 0, sp: 20, ep: 0, gp: 20, pp: 0 },
+    },
+    ranger: {
+      weapons: [getW('w_longbow', true), getW('w_shortsword', true)],
+      armor: [getA('a_scale_mail', true)],
+      gear: [getG('g_backpack'), getG('g_bedroll'), getG('g_mess_kit'), getG('g_tinderbox'), getG('g_torches', 10), getG('g_rations', 10), getG('g_waterskin'), getG('g_quiver_arrows', 20), getG('g_hempen_rope')],
+      currency: { cp: 0, sp: 20, ep: 0, gp: 15, pp: 0 },
+    },
+    rogue: {
+      weapons: [getW('w_rapier', true), getW('w_shortbow', false), getW('w_dagger', true)],
+      armor: [getA('a_leather', true)],
+      gear: [getG('g_backpack'), getG('g_thieves_tools'), getG('g_crowbar'), getG('g_hooded_lantern'), getG('g_oil_flask', 3), getG('g_rations', 5), getG('g_tinderbox'), getG('g_waterskin'), getG('g_quiver_arrows', 20)],
+      currency: { cp: 0, sp: 20, ep: 0, gp: 25, pp: 0 },
+    },
+    sorcerer: {
+      weapons: [getW('w_light_crossbow', true), getW('w_dagger', true)],
+      armor: [],
+      gear: [getG('g_backpack'), getG('g_arcane_focus'), getG('g_bedroll'), getG('g_tinderbox'), getG('g_torches', 10), getG('g_rations', 10), getG('g_waterskin'), getG('g_crossbow_bolts', 20)],
+      currency: { cp: 0, sp: 20, ep: 0, gp: 25, pp: 0 },
+    },
+    warlock: {
+      weapons: [getW('w_light_crossbow', true), getW('w_dagger', true)],
+      armor: [getA('a_leather', true)],
+      gear: [getG('g_backpack'), getG('g_arcane_focus'), getG('g_spellbook'), getG('g_tinderbox'), getG('g_rations', 10), getG('g_waterskin'), getG('g_crossbow_bolts', 20)],
+      currency: { cp: 0, sp: 20, ep: 0, gp: 20, pp: 0 },
+    },
+    wizard: {
+      weapons: [getW('w_quarterstaff', true), getW('w_dagger', false)],
+      armor: [],
+      gear: [getG('g_backpack'), getG('g_spellbook'), getG('g_arcane_focus'), getG('g_bedroll'), getG('g_mess_kit'), getG('g_tinderbox'), getG('g_rations', 10), getG('g_waterskin')],
+      currency: { cp: 0, sp: 20, ep: 0, gp: 25, pp: 0 },
+    },
+    artificer: {
+      weapons: [getW('w_light_crossbow', true), getW('w_dagger', false)],
+      armor: [getA('a_scale_mail', true), getA('a_shield', true)],
+      gear: [getG('g_backpack'), getG('g_thieves_tools'), getG('g_tinker_tools'), getG('g_bedroll'), getG('g_tinderbox'), getG('g_rations', 10), getG('g_waterskin'), getG('g_crossbow_bolts', 20)],
+      currency: { cp: 0, sp: 20, ep: 0, gp: 20, pp: 0 },
+    },
+  };
+
+  const selected = standardPacks[norm] || standardPacks.fighter;
+  return {
+    weapons: selected.weapons.filter(Boolean) as WeaponItem[],
+    armor: selected.armor.filter(Boolean) as ArmorItem[],
+    inventory: selected.gear.filter(Boolean) as GearItem[],
+    currency: selected.currency,
+  };
+}
+
 

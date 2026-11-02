@@ -9,10 +9,11 @@ import {
   Dices,
   BookOpen,
   UserCheck,
-  Wand2,
+  Compass,
   Upload,
-  PlusCircle,
+  Plus,
   Users,
+  Feather,
 } from 'lucide-react';
 import { Character } from '../types/character';
 
@@ -42,136 +43,141 @@ export const Header: React.FC<HeaderProps> = ({
   onNewCharacter,
 }) => {
   return (
-    <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 lg:px-8 py-3">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 md:gap-8">
-        {/* Zone 1: Brand Wordmark */}
+    <header className="sticky top-0 z-40 bg-[#FAF8F5]/92 backdrop-blur-md border-b border-[#E8E3DA] px-4 sm:px-6 lg:px-8 py-3 transition-colors">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 md:gap-6">
+        {/* Brand identity: quiet, editorial, Swedish modern */}
         <div className="flex items-center gap-3 shrink-0">
-          <div className="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-            <span className="font-serif font-black text-xl">⚔</span>
+          <div className="w-8 h-8 rounded-lg bg-[#F0EBE1] border border-[#DDD5C7] flex items-center justify-center text-[#B85D36] shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+            <Feather className="w-4 h-4" />
           </div>
           <div>
-            <div className="font-serif text-lg font-bold tracking-wider text-amber-100 whitespace-nowrap">
-              FORGE & GRIMOIRE
+            <div className="font-serif text-base font-semibold tracking-tight text-stone-900 leading-tight">
+              Forge & Grimoire
             </div>
-            <div className="text-[10px] text-slate-400 tracking-wider">
-              5E.TOOLS DATA COMPENDIUM
+            <div className="text-[10px] tracking-wider text-stone-600 uppercase font-medium">
+              5e Atelier & Character Folio
             </div>
           </div>
         </div>
 
-        {/* Zone 2: Navigation Links / Modes */}
-        <nav className="hidden md:flex items-center gap-2 lg:gap-4 text-sm font-medium">
+        {/* Navigation: Calm segmented switch */}
+        <nav className="hidden md:flex items-center bg-[#EFEAE2] p-1 rounded-xl border border-[#E3DDD1]">
           <button
             onClick={() => setActiveTab('sheet')}
-            className={`px-3.5 py-1.5 rounded-md transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
               activeTab === 'sheet'
-                ? 'bg-amber-500/15 text-amber-300 font-semibold border border-amber-500/30'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                ? 'bg-white text-stone-900 shadow-sm font-semibold'
+                : 'text-stone-600 hover:text-stone-900'
             }`}
           >
-            <UserCheck className="w-4 h-4 text-amber-400" />
+            <UserCheck className="w-3.5 h-3.5 text-[#B85D36]" />
             <span>Character Sheet</span>
           </button>
 
           <button
             onClick={() => setActiveTab('builder')}
-            className={`px-3.5 py-1.5 rounded-md transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
               activeTab === 'builder'
-                ? 'bg-amber-500/15 text-amber-300 font-semibold border border-amber-500/30'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                ? 'bg-white text-stone-900 shadow-sm font-semibold'
+                : 'text-stone-600 hover:text-stone-900'
             }`}
           >
-            <Wand2 className="w-4 h-4 text-amber-400" />
+            <Compass className="w-3.5 h-3.5 text-[#B85D36]" />
             <span>Builder</span>
           </button>
 
           <button
             onClick={onOpenCompendium}
-            className="px-3.5 py-1.5 rounded-md text-slate-300 hover:text-white hover:bg-slate-800/60 transition-colors flex items-center gap-2 whitespace-nowrap shrink-0"
+            className="px-3.5 py-1.5 rounded-lg text-xs font-medium text-stone-600 hover:text-stone-900 transition-colors flex items-center gap-1.5"
           >
-            <BookOpen className="w-4 h-4 text-slate-400" />
+            <BookOpen className="w-3.5 h-3.5 text-stone-600" />
             <span>5e Compendium</span>
           </button>
 
           <button
             onClick={onOpenImportModal}
-            className="px-3 py-1.5 rounded-md text-slate-300 hover:text-white hover:bg-slate-800/60 transition-colors flex items-center gap-2 whitespace-nowrap shrink-0"
-            title="Import 5e.tools JSON data"
+            className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-stone-600 hover:text-stone-900 transition-colors flex items-center gap-1.5"
+            title="Import 5e.tools JSON"
           >
-            <Upload className="w-4 h-4 text-slate-400" />
-            <span>Data Integration</span>
+            <Upload className="w-3.5 h-3.5 text-stone-600" />
+            <span>Import</span>
           </button>
         </nav>
 
-        {/* Zone 3: Primary Actions */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* Quick Dice Roller */}
+        {/* Right Actions */}
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          {/* Active Character Quick Picker */}
+          <button
+            onClick={onOpenCharacterModal}
+            className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-[#E5DFD5] hover:border-stone-400 text-stone-800 text-xs shadow-sm"
+            title="Switch or manage characters"
+          >
+            <Users className="w-3.5 h-3.5 text-stone-600" />
+            <span className="font-medium max-w-[120px] truncate">{activeCharacter.name}</span>
+            <span className="text-[11px] text-stone-600 tabular-nums">· Lvl {activeCharacter.level}</span>
+          </button>
+
+          {/* New Character Button */}
+          <button
+            onClick={onNewCharacter}
+            aria-label="Create New Character"
+            className="p-1.5 rounded-lg bg-white hover:bg-stone-100 text-stone-700 border border-[#E5DFD5] shadow-sm flex items-center justify-center transition-colors"
+            title="Create New Character"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+
+          {/* Quick Dice Roller Button */}
           <button
             onClick={onOpenDiceRoller}
             aria-label="Open Dice Roller"
-            className="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-750 text-slate-300 hover:text-amber-300 border border-slate-700/60 transition-colors flex items-center justify-center"
+            className="p-1.5 rounded-lg bg-white hover:bg-stone-100 text-stone-700 hover:text-stone-900 border border-[#E5DFD5] shadow-sm flex items-center justify-center transition-colors"
             title="Interactive Dice Roller"
           >
             <Dices className="w-4 h-4" />
           </button>
 
-          {/* Active Character Selector */}
-          <button
-            onClick={onOpenCharacterModal}
-            className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700/80 hover:border-amber-500/40 text-slate-200 transition-colors text-xs"
-          >
-            <Users className="w-3.5 h-3.5 text-amber-400" />
-            <span className="font-medium max-w-[110px] truncate">{activeCharacter.name}</span>
-            <span className="text-[11px] text-slate-400 tabular-nums">Lvl {activeCharacter.level}</span>
-          </button>
-
-          {/* New Character quick button */}
-          <button
-            onClick={onNewCharacter}
-            aria-label="Create New Character"
-            className="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-750 text-slate-300 hover:text-white border border-slate-700/60 transition-colors hidden sm:flex items-center justify-center"
-            title="Create New Character"
-          >
-            <PlusCircle className="w-4 h-4" />
-          </button>
-
-          {/* Primary CTA: Fillable PDF Export */}
+          {/* Primary Action: Export Fillable PDF */}
           <button
             onClick={onExportPdf}
             disabled={isExportingPdf}
-            className="px-4 py-2 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-450 active:bg-amber-600 text-slate-950 transition-all flex items-center gap-2 shadow-sm hover:shadow-amber-500/20 whitespace-nowrap shrink-0 disabled:opacity-60"
+            className="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-[#B85D36] hover:bg-[#A34A25] active:bg-[#8F3E1D] text-white transition-all flex items-center gap-1.5 shadow-sm whitespace-nowrap shrink-0 disabled:opacity-60"
           >
-            <FileDown className="w-4 h-4" />
+            <FileDown className="w-3.5 h-3.5" />
             <span>{isExportingPdf ? 'Exporting...' : 'Export Fillable PDF'}</span>
           </button>
         </div>
       </div>
 
-      {/* Mobile nav tabs */}
-      <div className="flex md:hidden items-center justify-between gap-1 pt-2 border-t border-slate-800/60 mt-2">
+      {/* Mobile nav bar */}
+      <div className="flex md:hidden items-center justify-between gap-1 pt-2 border-t border-[#E8E3DA] mt-2">
         <button
           onClick={() => setActiveTab('sheet')}
-          className={`flex-1 py-1.5 text-xs text-center rounded ${activeTab === 'sheet' ? 'bg-amber-500/20 text-amber-300 font-semibold' : 'text-slate-400'}`}
+          className={`flex-1 py-1.5 text-xs text-center rounded-md font-medium transition-colors ${
+            activeTab === 'sheet' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-600'
+          }`}
         >
           Sheet
         </button>
         <button
           onClick={() => setActiveTab('builder')}
-          className={`flex-1 py-1.5 text-xs text-center rounded ${activeTab === 'builder' ? 'bg-amber-500/20 text-amber-300 font-semibold' : 'text-slate-400'}`}
+          className={`flex-1 py-1.5 text-xs text-center rounded-md font-medium transition-colors ${
+            activeTab === 'builder' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-600'
+          }`}
         >
           Builder
         </button>
         <button
           onClick={onOpenCompendium}
-          className="flex-1 py-1.5 text-xs text-center rounded text-slate-400 hover:text-slate-200"
+          className="flex-1 py-1.5 text-xs text-center rounded-md text-stone-600 hover:text-stone-900 font-medium"
         >
           Compendium
         </button>
         <button
           onClick={onOpenCharacterModal}
-          className="flex-1 py-1.5 text-xs text-center rounded text-slate-400 hover:text-slate-200"
+          className="flex-1 py-1.5 text-xs text-center rounded-md text-stone-600 hover:text-stone-900 font-medium"
         >
-          Heroes
+          Characters
         </button>
       </div>
     </header>

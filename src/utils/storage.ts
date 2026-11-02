@@ -5,6 +5,7 @@
 
 import { Character } from '../types/character';
 import { SAMPLE_CHARACTERS } from '../data/sampleCharacters';
+import { getOptimalArmoryForClass } from './calculations';
 
 const STORAGE_KEY = 'forge_grimoire_characters_v1';
 const ACTIVE_CHAR_KEY = 'forge_grimoire_active_char_id';
@@ -57,6 +58,7 @@ export function setActiveCharacterId(id: string): void {
 
 export function createBlankCharacter(): Character {
   const id = `char_${Date.now()}`;
+  const defaultArmory = getOptimalArmoryForClass('Fighter');
   return {
     id,
     name: 'New Hero',
@@ -67,8 +69,8 @@ export function createBlankCharacter(): Character {
     race: 'Human',
     className: 'Fighter',
     background: 'Folk Hero',
-    abilityMode: 'pointbuy',
-    baseAbilities: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+    abilityMode: 'standard',
+    baseAbilities: { str: 15, con: 14, dex: 13, wis: 12, cha: 10, int: 8 },
     customAbilityBonuses: { str: 1, dex: 1, con: 1, int: 1, wis: 1, cha: 1 },
     savingThrowProficiencies: ['str', 'con'],
     skillProficiencies: ['athletics', 'survival'],
@@ -86,10 +88,10 @@ export function createBlankCharacter(): Character {
     deathSaves: { successes: 0, failures: 0 },
     speed: 30,
     initiativeBonus: 0,
-    weapons: [],
-    armor: [],
-    inventory: [],
-    currency: { cp: 0, sp: 0, ep: 0, gp: 15, pp: 0 },
+    weapons: defaultArmory.weapons,
+    armor: defaultArmory.armor,
+    inventory: defaultArmory.inventory,
+    currency: defaultArmory.currency,
     spellSlotsTotal: [0, 0, 0, 0, 0, 0, 0, 0, 0],
     spellSlotsExpended: [0, 0, 0, 0, 0, 0, 0, 0, 0],
     spells: [],

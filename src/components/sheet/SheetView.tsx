@@ -32,8 +32,8 @@ export const SheetView: React.FC<SheetViewProps> = ({
   const [activeSheetTab, setActiveSheetTab] = useState<TabType>('combat');
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-      {/* Top Core Vitals Bar */}
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+      {/* Top Core Vitals & Resting Bar */}
       <CoreStatsBar
         character={character}
         onUpdateCharacter={onUpdateCharacter}
@@ -54,12 +54,12 @@ export const SheetView: React.FC<SheetViewProps> = ({
         {/* Center & Right Column: Tabbed Workspace (8 cols on lg screens) */}
         <div className="lg:col-span-8 space-y-4">
           {/* Sheet Navigation Tabs */}
-          <div className="flex items-center gap-1.5 p-1 bg-slate-900 border border-slate-800 rounded-xl overflow-x-auto">
+          <div className="flex items-center gap-1 p-1 bg-white border border-[#E5DFD5] rounded-2xl shadow-sm overflow-x-auto">
             {[
               { id: 'combat', label: 'Combat & Actions', icon: Swords },
-              { id: 'spells', label: 'Spells & Grimoire', icon: Sparkles },
+              { id: 'spells', label: 'Grimoire & Spells', icon: Sparkles },
               { id: 'features', label: 'Features & Traits', icon: Award },
-              { id: 'inventory', label: 'Inventory & Wealth', icon: Backpack },
+              { id: 'inventory', label: 'Armory & Wealth', icon: Backpack },
               { id: 'bio', label: 'Bio & Chronicle', icon: User },
             ].map((tab) => {
               const Icon = tab.icon;
@@ -69,13 +69,13 @@ export const SheetView: React.FC<SheetViewProps> = ({
                 <button
                   key={tab.id}
                   onClick={() => setActiveSheetTab(tab.id as TabType)}
-                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all whitespace-nowrap shrink-0 ${
+                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-all whitespace-nowrap shrink-0 ${
                     isActive
-                      ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      ? 'bg-stone-900 text-white font-semibold shadow-sm'
+                      : 'text-stone-600 hover:text-stone-900 hover:bg-[#FAF8F5]'
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-3.5 h-3.5" />
                   <span>{tab.label}</span>
                 </button>
               );
