@@ -22,7 +22,67 @@ interface ToolsCompendiumModalProps {
   onUpdateCharacter: (char: Character) => void;
 }
 
-type CompendiumCategory = 'spells' | 'classes' | 'races' | 'backgrounds' | 'equipment' | 'feats';
+type CompendiumCategory = 'all' | 'spells' | 'classes' | 'races' | 'backgrounds' | 'equipment' | 'feats';
+
+/**
+ * Calculates a relevance score for search results.
+ * Higher scores mean a closer literal match to the typed query.
+ */
+function getSearchScore(item: any, q: string): number {
+  if (!q) return 0;
+  const name = (item.name || '').toLowerCase();
+  const compType = (item.compType || '').toLowerCase();
+  const category = (item.category || '').toLowerCase();
+  const school = (item.school || '').toLowerCase();
+
+  // Tier 1: Exact literal match on name (e.g. user typed "artificer" and item name is "Artificer")
+  if (name === q) return 100000;
+
+  // Tier 2: Name starts with query (e.g. user typed "artific" or "fire")
+  // Shorter names get higher priority so closer literal lengths rank first
+  if (name.startsWith(q)) return 50000 - Math.min(name.length * 10, 5000);
+
+  // Tier 3: Word boundary match in name (e.g. "Battle Smith Artificer")
+  try {
+    const wordBoundaryRegex = new RegExp(`\\b${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i');
+    if (wordBoundaryRegex.test(name)) return 30000 - Math.min(name.length * 10, 5000);
+  } catch {
+    // fallback if regex fails
+  }
+
+  // Tier 4: Substring inside name
+  if (name.includes(q)) return 20000 - Math.min(name.length * 10, 5000);
+
+  // Tier 5: Exact match on component type or category (e.g. "class", "spell", "weapon")
+  if (compType === q) return 12000;
+  if (category === q) return 11000;
+
+  // Tier 6: Subrace name match
+  if (item.subraces && Array.isArray(item.subraces)) {
+    for (const sr of item.subraces) {
+      const srName = (sr.name || '').toLowerCase();
+      if (srName === q) return 10000;
+      if (srName.startsWith(q)) return 9000;
+      if (srName.includes(q)) return 8000;
+    }
+  }
+
+  // Tier 7: Magic school exact/substring
+  if (school === q) return 7000;
+  if (school.includes(q)) return 6000;
+
+  // Tier 8: Category substring
+  if (category.includes(q)) return 5000;
+  if (compType.includes(q)) return 4500;
+
+  // Tier 9: Classes list exact/substring (e.g. spells on the Artificer spell list)
+  if (item.classes && Array.isArray(item.classes)) {
+    if (item.classes.some((c: string) => c.toLowerCase() === q)) return 3000;
+    if (item.classes.some((c: string) => c.toLowerCase().includes(q))) return 2000;
+  }
+
+  return 0;
+}
 
 export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
   isOpen,
@@ -30,7 +90,7 @@ export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
   activeCharacter,
   onUpdateCharacter,
 }) => {
-  const [activeCategory, setActiveCategory] = useState<CompendiumCategory>('spells');
+  const [activeCategory, setActiveCategory] = useState<CompendiumCategory>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [spellLevelFilter, setSpellLevelFilter] = useState<string>('all');
   const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -39,8 +99,36 @@ export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
   const filteredItems = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
 
-    if (activeCategory === 'spells') {
-      return FIVE_TOOLS_SPELLS.filter((spell) => {
+    let list: any[] = [];
+
+    if (activeCategory === 'all') {
+      const allUnified = [
+        ...FIVE_TOOLS_SPELLS.map((s) => ({ ...s, compType: 'Spell' })),
+        ...FIVE_TOOLS_CLASSES.map((c) => ({ ...c, compType: 'Class' })),
+        ...FIVE_TOOLS_RACES.map((r) => ({ ...r, compType: 'Race' })),
+        ...FIVE_TOOLS_BACKGROUNDS.map((b) => ({ ...b, compType: 'Background' })),
+        ...FIVE_TOOLS_FEATS.map((f) => ({ ...f, compType: 'Feat' })),
+        ...FIVE_TOOLS_WEAPONS.map((w) => ({ ...w, eqType: 'Weapon', compType: 'Weapon' })),
+        ...FIVE_TOOLS_ARMOR.map((a) => ({ ...a, eqType: 'Armor', compType: 'Armor' })),
+        ...FIVE_TOOLS_STANDARD_GEAR.map((g) => ({ ...g, eqType: 'Gear', compType: 'Gear' })),
+      ];
+
+      if (!q) return allUnified;
+
+      list = allUnified.filter((item: any) => {
+        const matchesName = item.name?.toLowerCase().includes(q);
+        const matchesType = item.compType?.toLowerCase().includes(q);
+        const matchesSchool = item.school && item.school.toLowerCase().includes(q);
+        const matchesCat = item.category && item.category.toLowerCase().includes(q);
+        const matchesClasses =
+          item.classes && Array.isArray(item.classes) && item.classes.some((c: string) => c.toLowerCase().includes(q));
+        const matchesSubraces =
+          item.subraces && Array.isArray(item.subraces) && item.subraces.some((sr: any) => sr.name?.toLowerCase().includes(q));
+
+        return matchesName || matchesType || matchesSchool || matchesCat || matchesClasses || matchesSubraces;
+      });
+    } else if (activeCategory === 'spells') {
+      list = FIVE_TOOLS_SPELLS.map((s) => ({ ...s, compType: 'Spell' })).filter((spell) => {
         const matchesQuery =
           !q ||
           spell.name.toLowerCase().includes(q) ||
@@ -49,39 +137,55 @@ export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
         const matchesLevel = spellLevelFilter === 'all' || spell.level.toString() === spellLevelFilter;
         return matchesQuery && matchesLevel;
       });
-    }
-
-    if (activeCategory === 'classes') {
-      return FIVE_TOOLS_CLASSES.filter((c) => !q || c.name.toLowerCase().includes(q));
-    }
-
-    if (activeCategory === 'races') {
-      return FIVE_TOOLS_RACES.filter(
+    } else if (activeCategory === 'classes') {
+      list = FIVE_TOOLS_CLASSES.map((c) => ({ ...c, compType: 'Class' })).filter(
+        (c) => !q || c.name.toLowerCase().includes(q)
+      );
+    } else if (activeCategory === 'races') {
+      list = FIVE_TOOLS_RACES.map((r) => ({ ...r, compType: 'Race' })).filter(
         (r) => !q || r.name.toLowerCase().includes(q) || r.subraces?.some((sr) => sr.name.toLowerCase().includes(q))
       );
-    }
-
-    if (activeCategory === 'backgrounds') {
-      return FIVE_TOOLS_BACKGROUNDS.filter((b) => !q || b.name.toLowerCase().includes(q));
-    }
-
-    if (activeCategory === 'feats') {
-      return FIVE_TOOLS_FEATS.filter((f) => !q || f.name.toLowerCase().includes(q));
-    }
-
-    if (activeCategory === 'equipment') {
+    } else if (activeCategory === 'backgrounds') {
+      list = FIVE_TOOLS_BACKGROUNDS.map((b) => ({ ...b, compType: 'Background' })).filter(
+        (b) => !q || b.name.toLowerCase().includes(q)
+      );
+    } else if (activeCategory === 'feats') {
+      list = FIVE_TOOLS_FEATS.map((f) => ({ ...f, compType: 'Feat' })).filter(
+        (f) => !q || f.name.toLowerCase().includes(q)
+      );
+    } else if (activeCategory === 'equipment') {
       const allEq = [
-        ...FIVE_TOOLS_WEAPONS.map((w) => ({ ...w, eqType: 'Weapon' })),
-        ...FIVE_TOOLS_ARMOR.map((a) => ({ ...a, eqType: 'Armor' })),
-        ...FIVE_TOOLS_STANDARD_GEAR.map((g) => ({ ...g, eqType: 'Gear' })),
+        ...FIVE_TOOLS_WEAPONS.map((w) => ({ ...w, eqType: 'Weapon', compType: 'Weapon' })),
+        ...FIVE_TOOLS_ARMOR.map((a) => ({ ...a, eqType: 'Armor', compType: 'Armor' })),
+        ...FIVE_TOOLS_STANDARD_GEAR.map((g) => ({ ...g, eqType: 'Gear', compType: 'Gear' })),
       ];
-      return allEq.filter(
+      list = allEq.filter(
         (e) => !q || e.name.toLowerCase().includes(q) || (e.category && e.category.toLowerCase().includes(q))
       );
     }
 
-    return [];
+    if (q) {
+      list.sort((a, b) => {
+        const scoreA = getSearchScore(a, q);
+        const scoreB = getSearchScore(b, q);
+        if (scoreB !== scoreA) {
+          return scoreB - scoreA;
+        }
+        return (a.name || '').localeCompare(b.name || '');
+      });
+    }
+
+    return list;
   }, [activeCategory, searchQuery, spellLevelFilter]);
+
+  const activeSelected = useMemo(() => {
+    if (selectedItem && filteredItems.some((fi: any) => fi.name === selectedItem.name)) {
+      return selectedItem;
+    }
+    return filteredItems[0] || null;
+  }, [selectedItem, filteredItems]);
+
+  const item = activeSelected;
 
   if (!isOpen) return null;
 
@@ -164,6 +268,7 @@ export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
         {/* Subheader: Category Tabs */}
         <div className="flex items-center gap-1 px-6 py-2.5 bg-[#FAF8F5] border-b border-[#E8E3DA] overflow-x-auto">
           {[
+            { id: 'all', label: 'All', icon: Search },
             { id: 'spells', label: 'Spells', icon: Sparkles },
             { id: 'classes', label: 'Classes & Subclasses', icon: Swords },
             { id: 'races', label: 'Races & Species', icon: Shield },
@@ -198,11 +303,19 @@ export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
             <Search className="w-3.5 h-3.5 text-stone-600 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder={`Search ${activeCategory}...`}
+              placeholder={
+                activeCategory === 'all'
+                  ? 'Search all 5e entries (spells, classes, weapons, armor, feats, races)...'
+                  : `Search ${activeCategory}...`
+              }
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-8 pr-3 py-1.5 text-xs bg-[#FAF8F5] border border-[#E5DFD5] rounded-xl text-stone-900 placeholder-stone-600 focus:outline-none focus:border-stone-400"
             />
+          </div>
+
+          <div className="text-xs text-stone-500 font-mono shrink-0">
+            {filteredItems.length} {filteredItems.length === 1 ? 'entry' : 'entries'}
           </div>
 
           {activeCategory === 'spells' && (
@@ -240,60 +353,69 @@ export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
         <div className="flex-1 grid grid-cols-1 md:grid-cols-12 overflow-hidden">
           {/* List Column */}
           <div className="md:col-span-5 border-r border-[#E8E3DA] overflow-y-auto divide-y divide-[#F0EBE1]">
-            {filteredItems.length === 0 ? (
-              <div className="p-8 text-center text-xs text-stone-600">
-                No entries found matching "{searchQuery}".
-              </div>
-            ) : (
-              filteredItems.map((item: any, idx) => {
-                const isSelected = selectedItem?.name === item.name || (!selectedItem && idx === 0);
-                return (
-                  <button
-                    key={item.id || item.name}
-                    onClick={() => setSelectedItem(item)}
-                    className={`w-full text-left p-4 transition-all flex items-center justify-between group ${
-                      isSelected
-                        ? 'bg-[#FAF8F5] border-l-2 border-l-[#B85D36] text-stone-900'
-                        : 'hover:bg-[#FAF8F5] text-stone-800'
-                    }`}
-                  >
-                    <div>
-                      <div className="font-serif font-semibold text-sm text-stone-900">
-                        {item.name}
-                      </div>
-                      <div className="text-[11px] text-stone-600 mt-0.5">
-                        {item.school && `${item.school} · ${item.level === 0 ? 'Cantrip' : `Lvl ${item.level}`}`}
-                        {item.hd && `Hit Die: d${item.hd.faces}`}
-                        {item.speed && `Speed: ${item.speed} ft`}
-                        {item.category && `${item.category}`}
-                        {item.damage && ` · ${item.damage} ${item.damageType || ''}`}
-                      </div>
+                  {filteredItems.length === 0 ? (
+                    <div className="p-8 text-center text-xs text-stone-600">
+                      No entries found matching "{searchQuery}".
                     </div>
-                  </button>
-                );
-              })
-            )}
-          </div>
+                  ) : (
+                    filteredItems.map((item: any) => {
+                      const isSelected = activeSelected?.name === item.name && (activeSelected?.compType === item.compType || !activeSelected?.compType);
+                      return (
+                        <button
+                          key={`${item.compType || 'c'}_${item.id || item.name}`}
+                          onClick={() => setSelectedItem(item)}
+                          className={`w-full text-left p-4 transition-all flex items-center justify-between group ${
+                            isSelected
+                              ? 'bg-[#FAF8F5] border-l-2 border-l-[#B85D36] text-stone-900'
+                              : 'hover:bg-[#FAF8F5] text-stone-800'
+                          }`}
+                        >
+                          <div className="flex-1 min-w-0 pr-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-serif font-semibold text-sm text-stone-900 truncate">
+                                {item.name}
+                              </span>
+                              {item.compType && (
+                                <span className="text-[9px] uppercase font-mono tracking-wider px-1.5 py-0.5 rounded bg-stone-100 text-stone-600 border border-[#E5DFD5] shrink-0">
+                                  {item.compType}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-stone-600 mt-0.5 truncate">
+                              {item.school && `${item.school} · ${item.level === 0 ? 'Cantrip' : `Lvl ${item.level}`}`}
+                              {item.hd && `Hit Die: d${item.hd.faces}`}
+                              {item.speed && `Speed: ${item.speed} ft`}
+                              {item.category && `${item.category}`}
+                              {item.damage && ` · ${item.damage} ${item.damageType || ''}`}
+                              {item.ac !== undefined && ` · AC ${item.ac}`}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
 
           {/* Details Column */}
           <div className="md:col-span-7 overflow-y-auto p-6 bg-[#FAF8F5]">
-            {(() => {
-              const item = selectedItem || filteredItems[0];
-              if (!item) {
-                return (
-                  <div className="h-full flex items-center justify-center text-xs text-stone-600">
-                    Select an entry to view complete 5e rules and lore.
-                  </div>
-                );
-              }
-
-              return (
-                <div className="space-y-4">
+            {!item ? (
+              <div className="h-full flex items-center justify-center text-xs text-stone-600">
+                Select an entry to view complete 5e rules and lore.
+              </div>
+            ) : (
+              <div className="space-y-4">
                   <div className="flex items-start justify-between gap-4 border-b border-[#E8E3DA] pb-3">
                     <div>
-                      <h4 className="font-serif text-2xl font-semibold text-stone-900">
-                        {item.name}
-                      </h4>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-serif text-2xl font-semibold text-stone-900">
+                          {item.name}
+                        </h4>
+                        {item.compType && (
+                          <span className="text-xs font-mono uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#FAF4ED] text-[#B85D36] border border-[#ECD9CE]">
+                            {item.compType}
+                          </span>
+                        )}
+                      </div>
                       <div className="text-xs text-stone-600 mt-1 flex items-center gap-2 flex-wrap">
                         {item.school && <span>{item.school} (Level {item.level})</span>}
                         {item.hd && <span>Hit Die: d{item.hd.faces}</span>}
@@ -303,8 +425,8 @@ export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
                     </div>
 
                     {/* Quick Add Actions */}
-                    <div className="flex items-center gap-2">
-                      {activeCategory === 'spells' && (
+                    <div className="flex items-center gap-2 shrink-0">
+                      {(activeCategory === 'spells' || (activeCategory === 'all' && (item.compType === 'Spell' || item.school))) && (
                         <button
                           onClick={() => handleAddSpellToCharacter(item)}
                           className="px-3.5 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all"
@@ -314,7 +436,7 @@ export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
                         </button>
                       )}
 
-                      {activeCategory === 'equipment' && item.damage && (
+                      {((activeCategory === 'equipment' || activeCategory === 'all') && (item.damage || item.compType === 'Weapon')) && (
                         <button
                           onClick={() => handleAddWeaponToCharacter(item)}
                           className="px-3.5 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all"
@@ -324,7 +446,7 @@ export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
                         </button>
                       )}
 
-                      {activeCategory === 'equipment' && item.ac && (
+                      {((activeCategory === 'equipment' || activeCategory === 'all') && (item.ac !== undefined || item.compType === 'Armor')) && (
                         <button
                           onClick={() => handleAddArmorToCharacter(item)}
                           className="px-3.5 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all"
@@ -428,9 +550,8 @@ export const ToolsCompendiumModal: React.FC<ToolsCompendiumModalProps> = ({
                     </div>
                   )}
                 </div>
-              );
-            })()}
-          </div>
+              )}
+            </div>
         </div>
       </div>
     </div>

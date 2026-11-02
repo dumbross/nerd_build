@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
-import { X, Plus, Copy, Trash2, Download, Check, Shield } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Plus, Copy, Trash2, Download, Check, Shield, Search } from 'lucide-react';
 import { Character } from '../types/character';
 
 interface CharacterSelectorModalProps {
@@ -28,7 +28,21 @@ export const CharacterSelectorModal: React.FC<CharacterSelectorModalProps> = ({
   onCloneCharacter,
   onDeleteCharacter,
 }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+
   if (!isOpen) return null;
+
+  const filteredCharacters = characters.filter((c) => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      c.name.toLowerCase().includes(q) ||
+      c.race.toLowerCase().includes(q) ||
+      (c.subrace && c.subrace.toLowerCase().includes(q)) ||
+      c.className.toLowerCase().includes(q) ||
+      (c.subclass && c.subclass.toLowerCase().includes(q))
+    );
+  });
 
   const handleExportJson = (char: Character) => {
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(char, null, 2));
@@ -54,21 +68,40 @@ export const CharacterSelectorModal: React.FC<CharacterSelectorModalProps> = ({
                 Manage Characters
               </h3>
               <p className="text-xs text-stone-600">
-                Switch hero dossiers, duplicate, or export JSON backups
+                19 ready-to-play sample heroes across every 5e race, plus custom dossiers
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-colors"
+            className="p-1.5 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
+        {/* Search bar */}
+        <div className="px-6 py-3 border-b border-[#E8E3DA] bg-white">
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by race (Dwarf, Tabaxi, Kobold, Genasi...), class, or name..."
+              className="w-full pl-9 pr-4 py-2 bg-[#FAF8F5] border border-[#E5DFD5] rounded-xl text-xs text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-stone-400"
+            />
+          </div>
+        </div>
+
         {/* Content list */}
         <div className="p-6 overflow-y-auto space-y-3 flex-1">
-          {characters.map((char) => {
+          {filteredCharacters.length === 0 ? (
+            <div className="text-center py-8 text-xs text-stone-500 italic">
+              No characters found matching "{searchQuery}"
+            </div>
+          ) : (
+            filteredCharacters.map((char) => {
             const isActive = char.id === activeCharacterId;
             return (
               <div
@@ -139,7 +172,7 @@ export const CharacterSelectorModal: React.FC<CharacterSelectorModalProps> = ({
                 </div>
               </div>
             );
-          })}
+          }))}
         </div>
 
         {/* Footer */}
