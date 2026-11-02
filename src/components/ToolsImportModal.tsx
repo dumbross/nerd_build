@@ -7,6 +7,8 @@ import React, { useState } from 'react';
 import { X, Upload, CheckCircle, AlertCircle, FileCode, Sparkles } from 'lucide-react';
 import { Character } from '../types/character';
 import { render5eToolsEntries, clean5eToolsText } from '../utils/5eParser';
+import { parse5eToolsBestiaryJson } from '../utils/fiveToolsMonsterParser';
+import { saveCustomMonster } from '../utils/monsterStorage';
 
 interface ToolsImportModalProps {
   isOpen: boolean;
@@ -50,6 +52,17 @@ export const ToolsImportModal: React.FC<ToolsImportModalProps> = ({
           message: `Successfully imported character "${parsed.name}" (${parsed.className} ${parsed.level || 1})!`,
         });
         setTimeout(() => onClose(), 1200);
+        return;
+      }
+
+      // Check if it's a 5e.tools monster or bestiary
+      if (parsed.monster || (parsed.name && (parsed.cr !== undefined || (parsed.hp && typeof parsed.hp === 'object')))) {
+        const monsters = parse5eToolsBestiaryJson(jsonText);
+        monsters.forEach((m) => saveCustomMonster(m));
+        setImportStatus({
+          type: 'success',
+          message: `Integrated ${monsters.length} 5e.tools creature(s) into the Bestiary! Switch to Monster Focus to view their stat blocks.`,
+        });
         return;
       }
 

@@ -22,11 +22,13 @@ import {
 } from './utils/storage';
 import { DiceRollResult, rollDice } from './utils/diceRoller';
 import { generateFillablePdf, downloadPdf } from './utils/pdfExport';
+import { BestiaryView } from './components/bestiary/BestiaryView';
 import { Dices, CheckCircle, Sparkles, BookOpen } from 'lucide-react';
 
 export default function App() {
   const [characters, setCharacters] = useState<Character[]>(() => loadSavedCharacters());
   const [activeId, setActiveId] = useState<string>(() => getActiveCharacterId());
+  const [focusMode, setFocusMode] = useState<'character' | 'monster'>('character');
   const [activeTab, setActiveTab] = useState<'sheet' | 'builder' | 'compendium'>('sheet');
 
   // Modals
@@ -158,6 +160,8 @@ export default function App() {
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        focusMode={focusMode}
+        setFocusMode={setFocusMode}
         activeCharacter={activeCharacter}
         onOpenCharacterModal={() => setIsCharModalOpen(true)}
         onOpenDiceRoller={() => setIsDiceModalOpen(true)}
@@ -170,50 +174,59 @@ export default function App() {
 
       {/* Main View Area */}
       <main className="flex-1 pb-16">
-        {activeTab === 'sheet' && (
-          <SheetView
-            character={activeCharacter}
-            onUpdateCharacter={handleUpdateCharacter}
+        {focusMode === 'monster' ? (
+          <BestiaryView
             onQuickRoll={handleQuickRoll}
-            onOpenCompendium={() => setIsCompendiumOpen(true)}
+            onSwitchToCharacter={() => setFocusMode('character')}
           />
-        )}
+        ) : (
+          <>
+            {activeTab === 'sheet' && (
+              <SheetView
+                character={activeCharacter}
+                onUpdateCharacter={handleUpdateCharacter}
+                onQuickRoll={handleQuickRoll}
+                onOpenCompendium={() => setIsCompendiumOpen(true)}
+              />
+            )}
 
-        {activeTab === 'builder' && (
-          <BuilderView
-            character={activeCharacter}
-            onUpdateCharacter={handleUpdateCharacter}
-            onSwitchToSheet={() => setActiveTab('sheet')}
-            onExportPdf={handleExportPdf}
-            isExportingPdf={isExportingPdf}
-          />
-        )}
+            {activeTab === 'builder' && (
+              <BuilderView
+                character={activeCharacter}
+                onUpdateCharacter={handleUpdateCharacter}
+                onSwitchToSheet={() => setActiveTab('sheet')}
+                onExportPdf={handleExportPdf}
+                isExportingPdf={isExportingPdf}
+              />
+            )}
 
-        {activeTab === 'compendium' && (
-          <div className="max-w-4xl mx-auto px-4 py-12">
-            <div className="p-10 rounded-2xl bg-white border border-[#E5DFD5] shadow-sm text-center space-y-5">
-              <div className="w-12 h-12 rounded-full bg-[#F5EFE6] border border-[#DDD5C7] text-[#B85D36] flex items-center justify-center mx-auto">
-                <BookOpen className="w-6 h-6" />
+            {activeTab === 'compendium' && (
+              <div className="max-w-4xl mx-auto px-4 py-12">
+                <div className="p-10 rounded-2xl bg-white border border-[#E5DFD5] shadow-sm text-center space-y-5">
+                  <div className="w-12 h-12 rounded-full bg-[#F5EFE6] border border-[#DDD5C7] text-[#B85D36] flex items-center justify-center mx-auto">
+                    <BookOpen className="w-6 h-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <h2 className="font-serif text-3xl font-semibold text-stone-900 tracking-tight">
+                      5e.tools Data Compendium
+                    </h2>
+                    <p className="text-sm text-stone-600 max-w-md mx-auto">
+                      Direct access to complete SRD and 5e.tools rules, lineages, subclasses, spells, and equipment.
+                    </p>
+                  </div>
+                  <div className="pt-2">
+                    <button
+                      onClick={() => setIsCompendiumOpen(true)}
+                      className="px-5 py-2.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white font-medium text-xs inline-flex items-center gap-2 shadow-sm transition-all"
+                    >
+                      <Sparkles className="w-4 h-4 text-[#EBD6CA]" />
+                      <span>Open Interactive Compendium</span>
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-1">
-                <h2 className="font-serif text-3xl font-semibold text-stone-900 tracking-tight">
-                  5e.tools Data Compendium
-                </h2>
-                <p className="text-sm text-stone-600 max-w-md mx-auto">
-                  Direct access to complete SRD and 5e.tools rules, lineages, subclasses, spells, and equipment.
-                </p>
-              </div>
-              <div className="pt-2">
-                <button
-                  onClick={() => setIsCompendiumOpen(true)}
-                  className="px-5 py-2.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white font-medium text-xs inline-flex items-center gap-2 shadow-sm transition-all"
-                >
-                  <Sparkles className="w-4 h-4 text-[#EBD6CA]" />
-                  <span>Open Interactive Compendium</span>
-                </button>
-              </div>
-            </div>
-          </div>
+            )}
+          </>
         )}
       </main>
 
