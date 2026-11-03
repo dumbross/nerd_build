@@ -8,8 +8,9 @@ const fs = require('fs');
 const path = require('path');
 
 const BASE_URL = 'https://raw.githubusercontent.com/5etools-mirror-3/5etools-src/main/data/bestiary/';
+const DATA_ROOT = 'https://raw.githubusercontent.com/5etools-mirror-3/5etools-src/main/data/';
 
-const SOURCE_NAMES = {
+const MANUAL_SOURCE_NAMES = {
   MM: 'Monster Manual',
   VGM: "Volo's Guide to Monsters",
   MTF: "Mordenkainen's Tome of Foes",
@@ -17,31 +18,32 @@ const SOURCE_NAMES = {
   FTD: "Fizban's Treasury of Dragons",
   BGG: 'Glory of the Giants',
   CoS: 'Curse of Strahd',
-  BGDIA: "Descent into Avernus",
+  BGDIA: "Baldur's Gate: Descent into Avernus",
   ToA: 'Tomb of Annihilation',
   SKT: "Storm King's Thunder",
   ERLW: 'Eberron: Rising from the Last War',
   EGW: "Explorer's Guide to Wildemount",
   MOT: 'Mythic Odysseys of Theros',
   VRGR: "Van Richten's Guide to Ravenloft",
-  SCC: 'Strixhaven',
+  SCC: 'Strixhaven: A Curriculum of Chaos',
   WBtW: 'The Wild Beyond the Witchlight',
-  WDMM: 'Dungeon of the Mad Mage',
-  WDH: 'Dragon Heist',
+  WDMM: 'Waterdeep: Dungeon of the Mad Mage',
+  WDH: 'Waterdeep: Dragon Heist',
   GoS: 'Ghosts of Saltmarsh',
-  TSoTF: 'The Shattered Obelisk',
-  IDRotF: 'Rime of the Frostmaiden',
+  TSoTF: 'Phandelver and Below: The Shattered Obelisk',
+  PaBTSO: 'Phandelver and Below: The Shattered Obelisk',
+  IDRotF: 'Icewind Dale: Rime of the Frostmaiden',
   PHB: "Player's Handbook",
   DMG: "Dungeon Master's Guide",
   TCE: "Tasha's Cauldron of Everything",
   XGE: "Xanathar's Guide to Everything",
   AI: 'Acquisitions Incorporated',
-  BAM: 'Boo\'s Astral Menagerie',
-  MCV1SC: 'Monstrous Compendium Vol 1',
-  MCV2DC: 'Monstrous Compendium Vol 2',
-  MCV3MC: 'Monstrous Compendium Vol 3',
-  MCV4EC: 'Monstrous Compendium Vol 4',
-  AAG: 'Astral Adventurer\'s Guide',
+  BAM: "Boo's Astral Menagerie",
+  MCV1SC: 'Monstrous Compendium Vol 1: Spelljammer',
+  MCV2DC: 'Monstrous Compendium Vol 2: Dragonlance',
+  MCV3MC: 'Monstrous Compendium Vol 3: Minecraft',
+  MCV4EC: 'Monstrous Compendium Vol 4: Eldraine',
+  AAG: "Astral Adventurer's Guide",
   PSX: 'Plane Shift: Ixalan',
   PSD: 'Plane Shift: Dominaria',
   PSK: 'Plane Shift: Kaladesh',
@@ -55,10 +57,12 @@ const SOURCE_NAMES = {
   LMoP: 'Lost Mine of Phandelver',
   DoSI: 'Dragons of Stormwreck Isle',
   DIP: 'Dragon of Icespire Peak',
-  SLW: 'Sleeping Dragon\'s Wake',
-  SDW: 'Storm Lord\'s Wrath',
+  SLW: "Sleeping Dragon's Wake",
+  SDW: "Storm Lord's Wrath",
   DC: 'Divine Contention',
   XMM: '2024 Monster Manual',
+  XPHB: "2024 Player's Handbook",
+  XDMG: "2024 Dungeon Master's Guide",
   TftYP: 'Tales from the Yawning Portal',
   GGR: "Guildmasters' Guide to Ravnica",
   JttRC: 'Journeys through the Radiant Citadel',
@@ -68,9 +72,37 @@ const SOURCE_NAMES = {
   KftGV: 'Keys from the Golden Vault',
   PaB: 'Planescape: Adventures in the Multiverse',
   SatO: 'Sigil and the Outlands',
-  ToFW: 'Turn of Fortune\'s Wheel',
+  ToFW: "Turn of Fortune's Wheel",
   BoMT: 'The Book of Many Things',
   BMT: 'The Book of Many Things',
+  ESK: 'Essentials Kit',
+  MisMV1: 'Minis & Monsters Vol 1',
+  MFF: "Mordenkainen's Fiendish Folio",
+  SADS: 'Sapphire Anniversary Dice Set',
+  VD: 'Veil of Darkness',
+  CM: 'Candlekeep Mysteries',
+  DSotDQ: 'Dragonlance: Shadow of the Dragon Queen',
+  CRCotN: 'Critical Role: Call of the Netherdeep',
+  DoD: 'Domain of Delight',
+  LoX: 'Light of Xaryxis',
+  LR: 'Locathah Rising',
+  LRDT: 'The Lost Dungeon of Rickedness',
+  KKW: 'Krenko\'s Way',
+  LFL: 'Lost Laboratory of Kwalish',
+  LLK: 'Lost Laboratory of Kwalish',
+  IMR: 'Infernal Machine Rebuild',
+  HotB: 'Heart of Stone',
+  HftT: 'Hunt for the Thessalhydra',
+  CoA: 'Call from the Deep',
+  DitLCoT: 'Darkness in the Lost City of Tsojcanth',
+  GotSF: 'Giants of the Star Forge',
+  EFA: 'Elminster\'s Candlekeep Companion',
+  AATM: 'Adventure Atlas: The Mortuary',
+  ABH: 'A Boy and His Modron',
+  AWM: 'Adventure with Muk',
+  AU: 'Unearthed Arcana',
+  AUD: 'Unearthed Arcana: Druid',
+  MPP: 'Mordenkainen Presents: Monsters of the Multiverse Promo',
 };
 
 const CR_XP_MAP = {
@@ -125,7 +157,7 @@ function getProficiencyBonus(cr) {
 function fetchJson(url) {
   return new Promise((resolve, reject) => {
     https
-      .get(url, (res) => {
+      .get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
         if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
           return fetchJson(res.headers.location).then(resolve).catch(reject);
         }
@@ -154,8 +186,13 @@ function clean5eTag(text) {
     .replace(/\{@atk mw,rw\}/gi, 'Melee or Ranged Weapon Attack: ')
     .replace(/\{@atk ms\}/gi, 'Melee Spell Attack: ')
     .replace(/\{@atk rs\}/gi, 'Ranged Spell Attack: ')
+    .replace(/\{@atkr [^}]+\}/gi, 'Attack: ')
+    .replace(/\{@actSave ([^}]+)\}/gi, '$1 Saving Throw')
+    .replace(/\{@actSaveFail\}/gi, 'Failure: ')
+    .replace(/\{@actSaveSuccess\}/gi, 'Success: ')
+    .replace(/\{@actSaveSuccessOrFail\}/gi, 'Regardless of Success or Failure: ')
     .replace(/\{@h\}/gi, 'Hit: ')
-    .replace(/\{@recharge(?: (\d+))?\}/gi, (_, d) => d ? `(Recharge ${d}-6)` : '(Recharge 5-6)')
+    .replace(/\{@recharge(?: (\d+))?\}/gi, (_, d) => (d ? `(Recharge ${d}-6)` : '(Recharge 5-6)'))
     .replace(/\{@hit ([+-]?\d+)\}/gi, '$1')
     .replace(/\{@damage ([^}|]+)(?:\|[^}]+)?\}/gi, '$1')
     .replace(/\{@dc ([^}|]+)\}/gi, 'DC $1')
@@ -171,6 +208,7 @@ function clean5eTag(text) {
     .replace(/\{@sense ([^}|]+)(?:\|[^}]+)?\}/gi, '$1')
     .replace(/\{@quickref ([^}|]+)(?:\|[^}]+)?\}/gi, '$1')
     .replace(/\{@optfeature ([^}|]+)(?:\|[^}]+)?\}/gi, '$1')
+    .replace(/\{@variantrule ([^}|]+)(?:\|[^}]+)?\}/gi, '$1')
     .replace(/\{@[a-zA-Z]+ ([^}|]+)(?:\|[^}]+)?\}/gi, '$1')
     .replace(/\{@[a-zA-Z]+\}/gi, '')
     .trim();
@@ -201,33 +239,53 @@ function flattenEntries(entries) {
 function parseSize(s) {
   if (!s) return 'Medium';
   const char = Array.isArray(s) ? s[0] : String(s);
-  switch (char.toUpperCase()) {
+  switch (String(char).toUpperCase()) {
     case 'T': return 'Tiny';
     case 'S': return 'Small';
     case 'M': return 'Medium';
     case 'L': return 'Large';
     case 'H': return 'Huge';
     case 'G': return 'Gargantuan';
-    default: return 'Medium';
+    default: return String(char) || 'Medium';
   }
+}
+
+function capitalize(s) {
+  if (!s || typeof s !== 'string') return '';
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 function parseType(t) {
   if (!t) return { type: 'Monstrosity', subtype: undefined };
   if (typeof t === 'string') return { type: capitalize(t), subtype: undefined };
   if (typeof t === 'object') {
-    const main = capitalize(t.type || 'Monstrosity');
-    const sub = Array.isArray(t.tags)
-      ? t.tags.map((tag) => (typeof tag === 'string' ? tag : tag.tag || '')).filter(Boolean).join(', ')
-      : undefined;
-    return { type: main, subtype: sub };
+    let main = 'Monstrosity';
+    if (typeof t.type === 'string') {
+      main = capitalize(t.type);
+    } else if (t.type && typeof t.type === 'object') {
+      if (Array.isArray(t.type.choose)) {
+        main = t.type.choose.map(capitalize).join(' / ');
+      } else if (typeof t.type.type === 'string') {
+        main = capitalize(t.type.type);
+      }
+    } else if (Array.isArray(t.choose)) {
+      main = t.choose.map(capitalize).join(' / ');
+    }
+
+    let sub = undefined;
+    if (Array.isArray(t.tags)) {
+      sub = t.tags
+        .map((tag) => {
+          if (typeof tag === 'string') return tag;
+          if (tag && typeof tag === 'object') return tag.tag || tag.prefix || '';
+          return '';
+        })
+        .filter(Boolean)
+        .join(', ');
+    }
+    return { type: main || 'Monstrosity', subtype: sub || undefined };
   }
   return { type: 'Monstrosity', subtype: undefined };
-}
-
-function capitalize(s) {
-  if (!s) return '';
-  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 function parseAlignment(al) {
@@ -273,6 +331,9 @@ function parseAc(ac) {
       const typeDesc = first.from ? clean5eTag(first.from.join(', ')) : undefined;
       return { ac: first.ac, acType: typeDesc };
     }
+    if (typeof first === 'object' && first.special) {
+      return { ac: 10, acType: clean5eTag(first.special) };
+    }
   }
   return { ac: 10, acType: undefined };
 }
@@ -291,16 +352,17 @@ function parseHp(hp) {
 function parseSpeed(sp) {
   if (!sp) return '30 ft.';
   if (typeof sp === 'string') return sp;
+  if (typeof sp === 'number') return `${sp} ft.`;
   if (typeof sp === 'object') {
     const parts = [];
-    if (sp.walk) parts.push(`${sp.walk} ft.`);
-    if (sp.fly) {
-      const flyStr = typeof sp.fly === 'object' ? `${sp.fly.number} ft.${sp.fly.condition ? ` ${sp.fly.condition}` : ''}` : `${sp.fly} ft.`;
+    if (sp.walk != null) parts.push(`${sp.walk} ft.`);
+    if (sp.fly != null) {
+      const flyStr = typeof sp.fly === 'object' ? `${sp.fly.number || 30} ft.${sp.fly.condition ? ` ${sp.fly.condition}` : ''}` : `${sp.fly} ft.`;
       parts.push(`fly ${flyStr}`);
     }
-    if (sp.swim) parts.push(`swim ${sp.swim} ft.`);
-    if (sp.climb) parts.push(`climb ${sp.climb} ft.`);
-    if (sp.burrow) parts.push(`burrow ${sp.burrow} ft.`);
+    if (sp.swim != null) parts.push(`swim ${sp.swim} ft.`);
+    if (sp.climb != null) parts.push(`climb ${sp.climb} ft.`);
+    if (sp.burrow != null) parts.push(`burrow ${sp.burrow} ft.`);
     return parts.length > 0 ? parts.join(', ') : '30 ft.';
   }
   return '30 ft.';
@@ -309,6 +371,7 @@ function parseSpeed(sp) {
 function parseCr(cr) {
   if (!cr) return '0';
   if (typeof cr === 'string') return cr;
+  if (typeof cr === 'number') return String(cr);
   if (typeof cr === 'object') {
     if (cr.cr) return String(cr.cr);
   }
@@ -382,10 +445,133 @@ function parseLanguages(lang) {
   return '—';
 }
 
-function normalizeRawMonster(raw) {
+function applyMods(monster, mods) {
+  for (const [prop, modVal] of Object.entries(mods)) {
+    const modList = Array.isArray(modVal) ? modVal : [modVal];
+    for (const mod of modList) {
+      if (!mod || !mod.mode) continue;
+      if (mod.mode === 'replaceTxt') {
+        const flags = mod.flags || 'g';
+        let regex;
+        try {
+          regex = new RegExp(mod.replace, flags);
+        } catch {
+          continue;
+        }
+        const replaceInObj = (obj) => {
+          if (!obj) return obj;
+          if (typeof obj === 'string') return obj.replace(regex, mod.with);
+          if (Array.isArray(obj)) return obj.map(replaceInObj);
+          if (typeof obj === 'object') {
+            for (const k of Object.keys(obj)) {
+              obj[k] = replaceInObj(obj[k]);
+            }
+            return obj;
+          }
+          return obj;
+        };
+        if (prop === '*' || prop === '_') {
+          for (const key of ['trait', 'action', 'reaction', 'legendary', 'description']) {
+            if (monster[key]) monster[key] = replaceInObj(monster[key]);
+          }
+        } else if (monster[prop]) {
+          monster[prop] = replaceInObj(monster[prop]);
+        }
+      } else if (mod.mode === 'replaceArr') {
+        const targetProp = prop === '_' ? (mod.prop || 'action') : prop;
+        if (Array.isArray(monster[targetProp])) {
+          const itemsToInsert = Array.isArray(mod.items) ? mod.items : [mod.items];
+          const idx = monster[targetProp].findIndex(
+            (x) => (x.name || '').toLowerCase() === (mod.replace || '').toLowerCase()
+          );
+          if (idx !== -1) {
+            monster[targetProp].splice(idx, 1, ...itemsToInsert);
+          } else {
+            monster[targetProp].push(...itemsToInsert);
+          }
+        }
+      } else if (mod.mode === 'appendArr' || mod.mode === 'appendIfNotExistsArr') {
+        const targetProp = prop === '_' ? (mod.prop || 'trait') : prop;
+        if (!Array.isArray(monster[targetProp])) monster[targetProp] = [];
+        const items = Array.isArray(mod.items) ? mod.items : [mod.items];
+        items.forEach((it) => {
+          if (typeof it === 'string') {
+            if (!monster[targetProp].includes(it)) monster[targetProp].push(it);
+          } else {
+            monster[targetProp].push(it);
+          }
+        });
+      } else if (mod.mode === 'prependArr') {
+        const targetProp = prop === '_' ? (mod.prop || 'trait') : prop;
+        if (!Array.isArray(monster[targetProp])) monster[targetProp] = [];
+        const items = Array.isArray(mod.items) ? mod.items : [mod.items];
+        monster[targetProp].unshift(...items);
+      } else if (mod.mode === 'insertArr') {
+        const targetProp = prop === '_' ? (mod.prop || 'action') : prop;
+        if (!Array.isArray(monster[targetProp])) monster[targetProp] = [];
+        const items = Array.isArray(mod.items) ? mod.items : [mod.items];
+        monster[targetProp].splice(mod.index || 0, 0, ...items);
+      } else if (mod.mode === 'removeArr') {
+        const targetProp = prop === '_' ? (mod.prop || 'trait') : prop;
+        if (Array.isArray(monster[targetProp])) {
+          const namesToRemove = Array.isArray(mod.names) ? mod.names : [mod.names];
+          monster[targetProp] = monster[targetProp].filter((x) => !namesToRemove.includes(x.name));
+        }
+      } else if (mod.mode === 'addSkills') {
+        if (!monster.skill) monster.skill = {};
+        Object.assign(monster.skill, mod.skills || {});
+      } else if (mod.mode === 'setProp') {
+        const targetProp = mod.prop || prop;
+        if (mod.value === null) {
+          delete monster[targetProp];
+        } else {
+          monster[targetProp] = mod.value;
+        }
+      }
+    }
+  }
+}
+
+function resolveRawMonsterCopy(m, monsterMap, resolvingChain = new Set()) {
+  if (!m._copy) return m;
+
+  const copyKey = `${m._copy.name}|${m._copy.source || 'MM'}`.toLowerCase();
+  if (resolvingChain.has(copyKey)) {
+    return m;
+  }
+
+  const baseRaw = monsterMap.get(copyKey);
+  if (!baseRaw) {
+    return m;
+  }
+
+  resolvingChain.add(copyKey);
+  const resolvedBase = resolveRawMonsterCopy(
+    JSON.parse(JSON.stringify(baseRaw)),
+    monsterMap,
+    resolvingChain
+  );
+  resolvingChain.delete(copyKey);
+
+  const merged = JSON.parse(JSON.stringify(resolvedBase));
+
+  const skipKeys = new Set(['_copy', 'id']);
+  for (const [key, value] of Object.entries(m)) {
+    if (skipKeys.has(key)) continue;
+    merged[key] = JSON.parse(JSON.stringify(value));
+  }
+
+  if (m._copy._mod) {
+    applyMods(merged, m._copy._mod);
+  }
+
+  return merged;
+}
+
+function normalizeRawMonster(raw, sourceCatalog) {
   const name = raw.name || 'Unknown Creature';
   const rawSource = raw.source || 'MM';
-  const sourceName = SOURCE_NAMES[rawSource] || `5e.tools (${rawSource})`;
+  const sourceName = sourceCatalog[rawSource] || MANUAL_SOURCE_NAMES[rawSource] || `5e.tools (${rawSource})`;
   const id = `m_${rawSource.toLowerCase()}_${name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`;
 
   const { type, subtype } = parseType(raw.type);
@@ -494,16 +680,39 @@ function normalizeRawMonster(raw) {
 }
 
 async function main() {
+  console.log('Fetching books and adventures catalog for accurate source titles...');
+  const sourceCatalog = { ...MANUAL_SOURCE_NAMES };
+  try {
+    const books = await fetchJson(`${DATA_ROOT}books.json`);
+    if (books && Array.isArray(books.book)) {
+      books.book.forEach((b) => {
+        if (b.id && b.name) sourceCatalog[b.id] = b.name;
+      });
+    }
+  } catch (e) {
+    console.log('Using default books map.');
+  }
+
+  try {
+    const advs = await fetchJson(`${DATA_ROOT}adventures.json`);
+    if (advs && Array.isArray(advs.adventure)) {
+      advs.adventure.forEach((a) => {
+        if (a.id && a.name) sourceCatalog[a.id] = a.name;
+      });
+    }
+  } catch (e) {
+    console.log('Using default adventures map.');
+  }
+
   console.log('Fetching index.json...');
   const index = await fetchJson(`${BASE_URL}index.json`);
   const filenames = Object.values(index);
   console.log(`Discovered ${filenames.length} source files.`);
 
-  const allMonsters = [];
-  const seenIds = new Set();
+  const rawMonsters = [];
 
-  // Download files in chunks of 5
-  const CHUNK_SIZE = 5;
+  // Download files in chunks of 10
+  const CHUNK_SIZE = 10;
   for (let i = 0; i < filenames.length; i += CHUNK_SIZE) {
     const chunk = filenames.slice(i, i + CHUNK_SIZE);
     const results = await Promise.allSettled(
@@ -513,22 +722,47 @@ async function main() {
     results.forEach((res, idx) => {
       if (res.status === 'fulfilled' && res.value && Array.isArray(res.value.monster)) {
         res.value.monster.forEach((m) => {
-          try {
-            const norm = normalizeRawMonster(m);
-            // Deduplicate if identical ID
-            if (!seenIds.has(norm.id)) {
-              seenIds.add(norm.id);
-              allMonsters.push(norm);
-            }
-          } catch (err) {
-            // skip malformed
-          }
+          rawMonsters.push(m);
         });
+      } else if (res.status === 'rejected') {
+        console.warn(`Failed to fetch chunk ${chunk[idx]}:`, res.reason?.message);
       }
     });
 
-    process.stdout.write(`Processed ${Math.min(i + CHUNK_SIZE, filenames.length)}/${filenames.length} files (Monsters: ${allMonsters.length})\r`);
+    process.stdout.write(`Downloaded ${Math.min(i + CHUNK_SIZE, filenames.length)}/${filenames.length} files (Raw Monsters: ${rawMonsters.length})\r`);
   }
+  console.log(`\nSuccessfully downloaded ${rawMonsters.length} raw monsters.`);
+
+  // Build lookup map for _copy resolution
+  const monsterMap = new Map();
+  rawMonsters.forEach((m) => {
+    const key = `${m.name}|${m.source || 'MM'}`.toLowerCase();
+    monsterMap.set(key, m);
+  });
+
+  const allMonsters = [];
+  const seenIds = new Set();
+  let copyResolved = 0;
+
+  for (const raw of rawMonsters) {
+    try {
+      let resolved = raw;
+      if (raw._copy) {
+        resolved = resolveRawMonsterCopy(raw, monsterMap);
+        copyResolved++;
+      }
+
+      const norm = normalizeRawMonster(resolved, sourceCatalog);
+      if (!seenIds.has(norm.id)) {
+        seenIds.add(norm.id);
+        allMonsters.push(norm);
+      }
+    } catch (err) {
+      console.warn(`Failed normalizing monster ${raw.name}:`, err.message);
+    }
+  }
+
+  console.log(`Normalized ${allMonsters.length} unique monsters (resolved ${copyResolved} _copy statblocks).`);
 
   // Ensure Revivisect from reference sheet is always present
   if (!seenIds.has('m_revivisect')) {
@@ -555,30 +789,64 @@ async function main() {
       xp: 7200,
       proficiencyBonus: 4,
       traits: [
-        { name: 'Leeching Aura', desc: 'At the start of each of its turns, the Revivisect emits a sickly green aura in a 20-foot radius. Creatures within the aura take 10 (2d6+3) necrotic damage and must make a DC 15 Constitution saving throw. On a failed save, the creature\'s maximum hit points are reduced by an amount equal to the damage taken.' },
-        { name: 'Regeneration', desc: 'The Revivisect regains 5 hit points at the start of each of its turns. This ability does not function if the Revivisect has taken radiant damage since the end of its last turn.' },
+        {
+          name: 'Leeching Aura',
+          desc: "At the start of each of its turns, the Revivisect emits a sickly green aura in a 20-foot radius. Creatures within the aura take 10 (2d6+3) necrotic damage and must make a DC 15 Constitution saving throw. On a failed save, the creature's maximum hit points are reduced by an amount equal to the damage taken.",
+        },
+        {
+          name: 'Regeneration',
+          desc: "The Revivisect regains 5 hit points at the start of each of its turns. This ability does not function if the Revivisect has taken radiant damage since the end of its last turn.",
+        },
       ],
       actions: [
-        { name: 'Multiattack', desc: 'The Revivisect can make four attacks per turn: two with its claws and two with its tentacles.' },
-        { name: 'Claw', desc: 'Melee Weapon Attack: +9 to hit, reach 10 ft., one target. Hit: 12 (2d6+5) slashing damage.', attackBonus: 9, damageDice: '2d6', damageBonus: 5 },
-        { name: 'Tentacle', desc: 'Melee Weapon Attack: +9 to hit, reach 15 ft., one target. Hit: 10 (1d10+5) bludgeoning damage and the target is grappled (escape DC 15). The Revivisect can have up to four creatures grappled at once.', attackBonus: 9, damageDice: '1d10', damageBonus: 5 },
+        {
+          name: 'Multiattack',
+          desc: 'The Revivisect can make four attacks per turn: two with its claws and two with its tentacles.',
+        },
+        {
+          name: 'Claw',
+          desc: 'Melee Weapon Attack: +9 to hit, reach 10 ft., one target. Hit: 12 (2d6+5) slashing damage.',
+          attackBonus: 9,
+          damageDice: '2d6',
+          damageBonus: 5,
+        },
+        {
+          name: 'Tentacle',
+          desc: 'Melee Weapon Attack: +9 to hit, reach 15 ft., one target. Hit: 10 (1d10+5) bludgeoning damage and the target is grappled (escape DC 15). The Revivisect can have up to four creatures grappled at once.',
+          attackBonus: 9,
+          damageDice: '1d10',
+          damageBonus: 5,
+        },
       ],
       reactions: [
-        { name: 'Sanguinomorph', desc: 'Whenever a creature misses an attack roll against the Revivisect, it can use its reaction to regain hit points equal to the number needed to hit. For example, if a player rolls a 15 and misses the Revivisect\'s AC of 17, the creature gains 2 hit points.' },
+        {
+          name: 'Sanguinomorph',
+          desc: "Whenever a creature misses an attack roll against the Revivisect, it can use its reaction to regain hit points equal to the number needed to hit. For example, if a player rolls a 15 and misses the Revivisect's AC of 17, the creature gains 2 hit points.",
+        },
       ],
-      description: 'The Revivisect is a large, grotesque creature with multiple limbs and a bloated, leathery body. Its skin is covered in pustules and sores that ooze a sickly green fluid, and its eyes glow with an eerie, otherworldly light. It emits a foul stench.',
+      description:
+        'The Revivisect is a large, grotesque creature with multiple limbs and a bloated, leathery body. Its skin is covered in pustules and sores that ooze a sickly green fluid, and its eyes glow with an eerie, otherworldly light. It emits a foul stench.',
     });
   }
 
-  // Sort by name
+  // Sort alphabetically by name
   allMonsters.sort((a, b) => a.name.localeCompare(b.name));
 
   const outPath = path.resolve(__dirname, '../public/data/5etools-monsters.json');
   fs.writeFileSync(outPath, JSON.stringify(allMonsters));
-  console.log(`Wrote JSON bundle to ${outPath} (${(fs.statSync(outPath).size / (1024 * 1024)).toFixed(2)} MB)`);
+  console.log(
+    `Wrote JSON bundle to ${outPath} (Total Monsters: ${allMonsters.length}, File Size: ${(
+      fs.statSync(outPath).size /
+      (1024 * 1024)
+    ).toFixed(2)} MB)`
+  );
 }
 
-main().catch((err) => {
-  console.error('Build failed:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((err) => {
+    console.error('Build failed:', err);
+    process.exit(1);
+  });
+}
+
+module.exports = { main };

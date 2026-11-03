@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Backpack, Coins, Plus, Trash2, Shield, Swords, Sparkles } from 'lucide-react';
+import { Backpack, Coins, Plus, Trash2, Shield, Swords, Sparkles, BookOpen } from 'lucide-react';
 import { Character, GearItem, WeaponItem, ArmorItem } from '../../types/character';
 import { getAbilityScoresTotal } from '../../utils/calculations';
 import { EquipmentArmoryModal } from '../EquipmentArmoryModal';
@@ -12,11 +12,13 @@ import { EquipmentArmoryModal } from '../EquipmentArmoryModal';
 interface InventoryTabProps {
   character: Character;
   onUpdateCharacter: (char: Character) => void;
+  onOpenCompendium?: (category?: string) => void;
 }
 
 export const InventoryTab: React.FC<InventoryTabProps> = ({
   character,
   onUpdateCharacter,
+  onOpenCompendium,
 }) => {
   const [newItemName, setNewItemName] = useState('');
   const [newItemQty, setNewItemQty] = useState('1');
@@ -190,13 +192,25 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
           </div>
         </div>
 
-        <button
-          onClick={() => setIsArmoryOpen(true)}
-          className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-stone-50 border border-[#DDD5C7] text-stone-800 text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm"
-        >
-          <Swords className="w-3.5 h-3.5 text-[#B85D36]" />
-          <span>Browse Armory</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {onOpenCompendium && (
+            <button
+              onClick={() => onOpenCompendium('weapons')}
+              className="px-3 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium flex items-center gap-1.5 transition-all shadow-xs"
+              title="Open Weapons & Armor in Grand Compendium"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-[#EBD6CA]" />
+              <span>Full Compendium</span>
+            </button>
+          )}
+          <button
+            onClick={() => setIsArmoryOpen(true)}
+            className="px-3 py-1.5 rounded-xl bg-white hover:bg-stone-50 border border-[#DDD5C7] text-stone-800 text-xs font-medium flex items-center gap-1.5 transition-all shadow-xs"
+          >
+            <Swords className="w-3.5 h-3.5 text-[#B85D36]" />
+            <span>Quick Armory</span>
+          </button>
+        </div>
       </div>
 
       {/* Weapons Section */}

@@ -46,9 +46,7 @@ export async function fetchFull5eToolsMonsters(): Promise<Monster[]> {
     const res = await fetch('/data/5etools-monsters.json');
     if (res.ok) {
       const data: Monster[] = await res.json();
-      const existingNames = new Set(data.map((m) => m.name.toLowerCase()));
-      const extraCore = FIVE_TOOLS_MONSTERS.filter((m) => !existingNames.has(m.name.toLowerCase()));
-      fullMonstersCache = [...extraCore, ...data];
+      fullMonstersCache = data;
     }
   } catch (err) {
     console.error('Failed to load full 5etools monsters bundle', err);

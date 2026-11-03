@@ -18,7 +18,7 @@ interface SheetViewProps {
   character: Character;
   onUpdateCharacter: (char: Character) => void;
   onQuickRoll: (sides: number, count?: number, modifier?: number, label?: string) => void;
-  onOpenCompendium: () => void;
+  onOpenCompendium: (category?: any) => void;
 }
 
 type TabType = 'combat' | 'spells' | 'features' | 'inventory' | 'bio';
@@ -97,7 +97,7 @@ export const SheetView: React.FC<SheetViewProps> = ({
                 character={character}
                 onUpdateCharacter={onUpdateCharacter}
                 onQuickRoll={onQuickRoll}
-                onOpenCompendium={onOpenCompendium}
+                onOpenCompendium={() => onOpenCompendium('spells')}
               />
             )}
 
@@ -112,6 +112,7 @@ export const SheetView: React.FC<SheetViewProps> = ({
               <InventoryTab
                 character={character}
                 onUpdateCharacter={onUpdateCharacter}
+                onOpenCompendium={onOpenCompendium}
               />
             )}
 

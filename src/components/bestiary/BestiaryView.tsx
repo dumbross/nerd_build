@@ -170,6 +170,20 @@ export const BestiaryView: React.FC<BestiaryViewProps> = ({
           if (!src.includes('dragon heist') && !src.includes('(wdh)')) return false;
         } else if (selectedSource === 'IDRotF') {
           if (!src.includes('frostmaiden') && !src.includes('(idrotf)')) return false;
+        } else if (selectedSource === 'XMM') {
+          if (!src.includes('2024 monster manual') && !src.includes('(xmm)')) return false;
+        } else if (selectedSource === 'ERLW') {
+          if (!src.includes('eberron') && !src.includes('(erlw)')) return false;
+        } else if (selectedSource === 'BAM') {
+          if (!src.includes('astral menagerie') && !src.includes('(bam)')) return false;
+        } else if (selectedSource === 'EGW') {
+          if (!src.includes('wildemount') && !src.includes('(egw)')) return false;
+        } else if (selectedSource === 'MOT') {
+          if (!src.includes('theros') && !src.includes('(mot)')) return false;
+        } else if (selectedSource === 'SCC') {
+          if (!src.includes('strixhaven') && !src.includes('(scc)')) return false;
+        } else if (selectedSource === 'AU') {
+          if (!src.includes('unearthed arcana') && !src.includes('(au)')) return false;
         }
       }
 
@@ -283,7 +297,7 @@ export const BestiaryView: React.FC<BestiaryViewProps> = ({
               </span>
             </div>
             <p className="text-xs text-stone-600">
-              Hardcoded 5e.tools bestiary repository from Monster Manual, Volo's Guide, Mordenkainen, Multiverse & 110+ sourcebooks
+              Complete 5e.tools bestiary repository with all 4,575 monsters from Monster Manual, 2024 MM, Volo's Guide, Multiverse & 112 sourcebooks
             </p>
         </div>
 
@@ -376,8 +390,9 @@ export const BestiaryView: React.FC<BestiaryViewProps> = ({
               onChange={(e) => setSelectedSource(e.target.value)}
               className="px-2.5 py-1.5 text-xs rounded-xl bg-[#FAF8F5] border border-[#E5DFD5] text-stone-800 focus:outline-none"
             >
-              <option value="all">All Books & Sources</option>
+              <option value="all">All Books & Sources (112 Sources)</option>
               <option value="MM">Monster Manual (MM)</option>
+              <option value="XMM">2024 Monster Manual (XMM)</option>
               <option value="VGM">Volo's Guide to Monsters (VGM)</option>
               <option value="MTF">Mordenkainen's Tome of Foes (MTF)</option>
               <option value="MPMM">Monsters of the Multiverse (MPMM)</option>
@@ -390,7 +405,13 @@ export const BestiaryView: React.FC<BestiaryViewProps> = ({
               <option value="WDMM">Dungeon of the Mad Mage (WDMM)</option>
               <option value="WDH">Dragon Heist (WDH)</option>
               <option value="IDRotF">Rime of the Frostmaiden (IDRotF)</option>
-              <option value="VRGR">Van Richten's Guide to Ravenloft</option>
+              <option value="VRGR">Van Richten's Guide to Ravenloft (VRGR)</option>
+              <option value="ERLW">Eberron: Rising from the Last War (ERLW)</option>
+              <option value="BAM">Boo's Astral Menagerie (BAM)</option>
+              <option value="EGW">Explorer's Guide to Wildemount (EGW)</option>
+              <option value="MOT">Mythic Odysseys of Theros (MOT)</option>
+              <option value="SCC">Strixhaven: Curriculum of Chaos (SCC)</option>
+              <option value="AU">Unearthed Arcana (AU)</option>
               <option value="custom">Homebrew Only</option>
             </select>
 

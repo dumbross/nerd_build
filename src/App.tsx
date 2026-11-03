@@ -5,11 +5,12 @@
 
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { Header } from './components/Header';
+import { Header, FocusMode } from './components/Header';
 import { SheetView } from './components/sheet/SheetView';
 import { BuilderView } from './components/builder/BuilderView';
+import { CompendiumView } from './components/compendium/CompendiumView';
+import { CompendiumCategory } from './data/compendiumRegistry';
 import { DiceRollerModal } from './components/DiceRollerModal';
-import { ToolsCompendiumModal } from './components/ToolsCompendiumModal';
 import { ToolsImportModal } from './components/ToolsImportModal';
 import { CharacterSelectorModal } from './components/CharacterSelectorModal';
 import { Character } from './types/character';
@@ -28,13 +29,13 @@ import { Dices, CheckCircle, Sparkles, BookOpen } from 'lucide-react';
 export default function App() {
   const [characters, setCharacters] = useState<Character[]>(() => loadSavedCharacters());
   const [activeId, setActiveId] = useState<string>(() => getActiveCharacterId());
-  const [focusMode, setFocusMode] = useState<'character' | 'monster'>('character');
+  const [focusMode, setFocusMode] = useState<FocusMode>('character');
   const [activeTab, setActiveTab] = useState<'sheet' | 'builder' | 'compendium'>('sheet');
+  const [compendiumCategory, setCompendiumCategory] = useState<CompendiumCategory>('all');
 
   // Modals
   const [isCharModalOpen, setIsCharModalOpen] = useState(false);
   const [isDiceModalOpen, setIsDiceModalOpen] = useState(false);
-  const [isCompendiumOpen, setIsCompendiumOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // Dice Rolls & Notifications
@@ -165,28 +166,49 @@ export default function App() {
         activeCharacter={activeCharacter}
         onOpenCharacterModal={() => setIsCharModalOpen(true)}
         onOpenDiceRoller={() => setIsDiceModalOpen(true)}
-        onOpenCompendium={() => setIsCompendiumOpen(true)}
+        onOpenCompendium={(category?: any) => {
+          setFocusMode('compendium');
+          if (category) setCompendiumCategory(category);
+        }}
         onOpenImportModal={() => setIsImportModalOpen(true)}
         onExportPdf={handleExportPdf}
         isExportingPdf={isExportingPdf}
         onNewCharacter={handleCreateNewCharacter}
       />
 
-      {/* Main View Area */}
+      {/* Main View Area: 3 Primary Pillars (Character Focus, Monster Focus, Compendium) */}
       <main className="flex-1 pb-16">
-        {focusMode === 'monster' ? (
+        {focusMode === 'monster' && (
           <BestiaryView
             onQuickRoll={handleQuickRoll}
             onSwitchToCharacter={() => setFocusMode('character')}
           />
-        ) : (
+        )}
+
+        {focusMode === 'compendium' && (
+          <CompendiumView
+            activeCharacter={activeCharacter}
+            onUpdateCharacter={handleUpdateCharacter}
+            onSwitchToSheet={() => {
+              setFocusMode('character');
+              setActiveTab('sheet');
+            }}
+            onSwitchToBestiary={() => setFocusMode('monster')}
+            initialCategory={compendiumCategory}
+          />
+        )}
+
+        {focusMode === 'character' && (
           <>
             {activeTab === 'sheet' && (
               <SheetView
                 character={activeCharacter}
                 onUpdateCharacter={handleUpdateCharacter}
                 onQuickRoll={handleQuickRoll}
-                onOpenCompendium={() => setIsCompendiumOpen(true)}
+                onOpenCompendium={(category?: any) => {
+                  setFocusMode('compendium');
+                  if (category) setCompendiumCategory(category);
+                }}
               />
             )}
 
@@ -198,33 +220,6 @@ export default function App() {
                 onExportPdf={handleExportPdf}
                 isExportingPdf={isExportingPdf}
               />
-            )}
-
-            {activeTab === 'compendium' && (
-              <div className="max-w-4xl mx-auto px-4 py-12">
-                <div className="p-10 rounded-2xl bg-white border border-[#E5DFD5] shadow-sm text-center space-y-5">
-                  <div className="w-12 h-12 rounded-full bg-[#F5EFE6] border border-[#DDD5C7] text-[#B85D36] flex items-center justify-center mx-auto">
-                    <BookOpen className="w-6 h-6" />
-                  </div>
-                  <div className="space-y-1">
-                    <h2 className="font-serif text-3xl font-semibold text-stone-900 tracking-tight">
-                      5e.tools Data Compendium
-                    </h2>
-                    <p className="text-sm text-stone-600 max-w-md mx-auto">
-                      Direct access to complete SRD and 5e.tools rules, lineages, subclasses, spells, and equipment.
-                    </p>
-                  </div>
-                  <div className="pt-2">
-                    <button
-                      onClick={() => setIsCompendiumOpen(true)}
-                      className="px-5 py-2.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white font-medium text-xs inline-flex items-center gap-2 shadow-sm transition-all"
-                    >
-                      <Sparkles className="w-4 h-4 text-[#EBD6CA]" />
-                      <span>Open Interactive Compendium</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
             )}
           </>
         )}
@@ -274,13 +269,6 @@ export default function App() {
         recentRolls={recentRolls}
         onAddRoll={handleAddCustomRoll}
         onClearHistory={() => setRecentRolls([])}
-      />
-
-      <ToolsCompendiumModal
-        isOpen={isCompendiumOpen}
-        onClose={() => setIsCompendiumOpen(false)}
-        activeCharacter={activeCharacter}
-        onUpdateCharacter={handleUpdateCharacter}
       />
 
       <ToolsImportModal
