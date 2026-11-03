@@ -176,5 +176,147 @@ export const FIVE_TOOLS_FEATS: FiveToolsFeat[] = [
       'In addition, choose one 1st-level spell from that same list. You learn that spell and can cast it at its lowest level once per long rest without expending a spell slot.',
     ],
   },
+  // ==========================================
+  // TASHA'S CAULDRON OF EVERYTHING (TCE)
+  // ==========================================
+  {
+    name: 'Fey Touched',
+    source: 'TCE',
+    entries: [
+      'Your exposure to the Feywild’s magic has changed you, granting the following benefits:',
+      '• Increase your Intelligence, Wisdom, or Charisma score by 1, to a maximum of 20.',
+      '• You learn the {@spell misty step} spell and one 1st-level spell of your choice from the divination or enchantment school of magic.',
+      '• You can cast each of these spells without expending a spell slot once per long rest, or using spell slots you possess of the appropriate level.',
+    ],
+  },
+  {
+    name: 'Shadow Touched',
+    source: 'TCE',
+    entries: [
+      'Your exposure to the Shadowfell’s gloom has changed you, granting the following benefits:',
+      '• Increase your Intelligence, Wisdom, or Charisma score by 1, to a maximum of 20.',
+      '• You learn the {@spell invisibility} spell and one 1st-level spell of your choice from the illusion or necromancy school of magic.',
+      '• You can cast each of these spells without expending a spell slot once per long rest, or using spell slots you possess.',
+    ],
+  },
+  {
+    name: 'Telekinetic',
+    source: 'TCE',
+    entries: [
+      'You learn to move things with your mind, gaining the following benefits:',
+      '• Increase your Intelligence, Wisdom, or Charisma score by 1, to a maximum of 20.',
+      '• You learn the {@spell mage hand} cantrip. You can cast it without verbal or somatic components, and you can make the spectral hand invisible. Its range increases by 30 feet.',
+      '• As a bonus action, you can telekinetically shove one creature you can see within 30 feet of you. Unless the target succeeds on a Strength saving throw against your spell save DC (8 + PB + ability), it is moved 5 feet toward or away from you.',
+    ],
+  },
+  {
+    name: 'Telepathic',
+    source: 'TCE',
+    entries: [
+      'You awaken the ability to mentally connect with others, granting the following benefits:',
+      '• Increase your Intelligence, Wisdom, or Charisma score by 1, to a maximum of 20.',
+      '• You can speak telepathically to any creature you can see within 60 feet of you in a language you know.',
+      '• You can cast the {@spell detect thoughts} spell without expending a spell slot once per long rest, and using any spell slots you possess.',
+    ],
+  },
+  {
+    name: 'Chef',
+    source: 'TCE',
+    entries: [
+      'Time and effort spent mastering the culinary arts has paid off, granting the following benefits:',
+      '• Increase your Constitution or Wisdom score by 1, to a maximum of 20.',
+      '• You gain proficiency with cook’s utensils if you don’t already have it.',
+      '• As part of a short rest, you can prepare special food. Up to a number of creatures equal to 4 + your proficiency bonus who eat this food and spend Hit Dice regain an extra {@dice 1d8} hit points.',
+      '• At the end of a long rest, you can cook special treats. Eating a treat as a bonus action grants temporary hit points equal to your proficiency bonus.',
+    ],
+  },
+  {
+    name: 'Crusher',
+    source: 'TCE',
+    entries: [
+      'You are practiced in the art of crushing your enemies, granting the following benefits:',
+      '• Increase your Strength or Constitution score by 1, to a maximum of 20.',
+      '• Once per turn, when you hit a creature with an attack that deals bludgeoning damage, you can move it 5 feet to an unoccupied space, provided the target is no more than one size larger than you.',
+      '• When you score a critical hit that deals bludgeoning damage to a creature, attack rolls against that creature are made with advantage until the start of your next turn.',
+    ],
+  },
+  {
+    name: 'Piercer',
+    source: 'TCE',
+    entries: [
+      'You have achieved a penetrating accuracy in combat, granting the following benefits:',
+      '• Increase your Strength or Dexterity score by 1, to a maximum of 20.',
+      '• Once per turn, when you hit a creature with an attack that deals piercing damage, you can reroll one of the attack’s damage dice, and you must use the new roll.',
+      '• When you score a critical hit that deals piercing damage to a creature, you can roll one additional damage die when determining the extra piercing damage dealt.',
+    ],
+  },
+  {
+    name: 'Slasher',
+    source: 'TCE',
+    entries: [
+      'You have learned where to cut to have the greatest results, granting the following benefits:',
+      '• Increase your Strength or Dexterity score by 1, to a maximum of 20.',
+      '• Once per turn when you hit a creature with an attack that deals slashing damage, you can reduce the speed of the target by 10 feet until the start of your next turn.',
+      '• When you score a critical hit that deals slashing damage to a creature, you grievously wound it. Until the start of your next turn, the target has disadvantage on all attack rolls.',
+    ],
+  },
+  {
+    name: 'Skill Expert',
+    source: 'TCE',
+    entries: [
+      'You have honed your proficiency with particular skills, granting the following benefits:',
+      '• Increase one ability score of your choice by 1, to a maximum of 20.',
+      '• You gain proficiency in one skill of your choice.',
+      '• Choose one skill in which you have proficiency. You gain expertise with that skill, which means your proficiency bonus is doubled for any ability check you make with it.',
+    ],
+  },
+  {
+    name: 'Eldritch Adept',
+    source: 'TCE',
+    prerequisite: [{ spellcasting: true }],
+    entries: [
+      'Studying occult lore, you have unlocked the secrets of the multiverse: You learn one Eldritch Invocation option of your choice from the warlock class. If the invocation has a prerequisite, you can choose that invocation only if you’re a warlock and meet the prerequisite.',
+    ],
+  },
+  {
+    name: 'Metamagic Adept',
+    source: 'TCE',
+    prerequisite: [{ spellcasting: true }],
+    entries: [
+      'You’ve learned how to exert your will on your spells to alter how they function:',
+      '• You learn two Metamagic options of your choice from the sorcerer class.',
+      '• You gain 2 sorcery points to spend on Metamagic (these points are added to any sorcery points you have from another source). You regain all spent sorcery points when you finish a long rest.',
+    ],
+  },
+  // ==========================================
+  // FIZBAN'S TREASURY OF DRAGONS (FTD)
+  // ==========================================
+  {
+    name: 'Gift of the Chromatic Dragon',
+    source: 'FTD',
+    entries: [
+      'You’ve manifested some of the raw elemental power of chromatic dragons:',
+      '• Chromatic Infusion: As a bonus action, you can touch a simple or martial weapon and infuse it with acid, cold, fire, lightning, or poison. For 1 minute, the weapon deals an extra {@dice 1d4} damage of the chosen type.',
+      '• Reactive Resistance: When you take acid, cold, fire, lightning, or poison damage, you can use your reaction to give yourself resistance to that instance of damage (Proficiency Bonus times per long rest).',
+    ],
+  },
+  {
+    name: 'Gift of the Metallic Dragon',
+    source: 'FTD',
+    entries: [
+      'You’ve manifested some of the protective spirit of metallic dragons:',
+      '• Draconic Healing: You learn the {@spell cure wounds} spell. You can cast it without expending a spell slot once per long rest, and using any spell slots you possess.',
+      '• Protective Wings: When you or another creature within 5 feet of you is hit by an attack roll, you can manifest protective wings as a reaction, granting a bonus to AC equal to your proficiency bonus against that attack.',
+    ],
+  },
+  {
+    name: 'Gift of the Gem Dragon',
+    source: 'FTD',
+    entries: [
+      'You’ve manifested some of the psionic power of gem dragons:',
+      '• Increase your Intelligence, Wisdom, or Charisma score by 1, to a maximum of 20.',
+      '• Telekinetic Reprisal: When you take damage from a creature within 10 feet of you, you can use your reaction to deal {@dice 2d8} force damage and push the creature up to 10 feet away if it fails a Strength saving throw (Proficiency Bonus times per long rest).',
+    ],
+  },
 ];
 

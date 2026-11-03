@@ -743,4 +743,309 @@ export const FIVE_TOOLS_RACES: FiveToolsRace[] = [
       },
     ],
   },
+  // ==========================================
+  // FIZBAN'S TREASURY OF DRAGONS (FTD)
+  // ==========================================
+  {
+    name: 'Chromatic Dragonborn',
+    source: 'FTD',
+    page: 10,
+    size: ['M'],
+    speed: 30,
+    ability: [{ str: 2, cha: 1 }],
+    languages: ['Common', 'Draconic'],
+    traits: ['Chromatic Ancestry', 'Breath Weapon', 'Draconic Resistance', 'Chromatic Warding'],
+    entries: [
+      'Dragonborn with chromatic ancestry claim the raw elemental power of black, blue, green, red, or white dragons.',
+      {
+        type: 'entries',
+        name: 'Breath Weapon',
+        entries: ['You can exhale a 30-foot line (5 ft. wide) or 15-foot cone of elemental energy (acid, cold, fire, lightning, or poison). Creatures must make a DEX or CON save taking {@dice 1d10} damage (increases at 5th, 11th, and 17th level). Usable Proficiency Bonus times per long rest.'],
+      },
+      {
+        type: 'entries',
+        name: 'Chromatic Warding',
+        entries: ['Starting at 5th level, as an action, you can channel your draconic energy to become immune to the damage type associated with your ancestry for 1 minute (once per long rest).'],
+      },
+    ],
+  },
+  {
+    name: 'Metallic Dragonborn',
+    source: 'FTD',
+    page: 11,
+    size: ['M'],
+    speed: 30,
+    ability: [{ str: 2, cha: 1 }],
+    languages: ['Common', 'Draconic'],
+    traits: ['Metallic Ancestry', 'Breath Weapon', 'Draconic Resistance', 'Metallic Breath Weapon'],
+    entries: [
+      'Metallic dragonborn possess the defensive and disabling breath weapons of brass, bronze, copper, gold, or silver dragons.',
+      {
+        type: 'entries',
+        name: 'Metallic Breath Weapon',
+        entries: ['At 5th level, you gain a second breath weapon (15-foot cone). Choose Enervating Breath (incapacitates targets until start of your next turn on failed CON save) or Repulsion Breath (pushes targets 20 feet and knocks them prone on failed STR save).'],
+      },
+    ],
+  },
+  {
+    name: 'Gem Dragonborn',
+    source: 'FTD',
+    page: 12,
+    size: ['M'],
+    speed: 30,
+    ability: [{ int: 2, str: 1 }],
+    languages: ['Common', 'Draconic'],
+    traits: ['Gem Ancestry', 'Psionic Mind', 'Breath Weapon', 'Draconic Resistance', 'Gem Flight'],
+    subraces: [
+      { name: 'Amethyst (Force)', source: 'FTD', raceName: 'Gem Dragonborn', entries: ['Ancestry of the Amethyst dragon. Resistance to Force damage. Exhales a 15-foot cone of force.'] },
+      { name: 'Crystal (Radiant)', source: 'FTD', raceName: 'Gem Dragonborn', entries: ['Ancestry of the Crystal dragon. Resistance to Radiant damage. Exhales a 15-foot cone of radiant energy.'] },
+      { name: 'Emerald (Psychic)', source: 'FTD', raceName: 'Gem Dragonborn', entries: ['Ancestry of the Emerald dragon. Resistance to Psychic damage. Exhales a 15-foot cone of psychic energy.'] },
+      { name: 'Sapphire (Thunder)', source: 'FTD', raceName: 'Gem Dragonborn', entries: ['Ancestry of the Sapphire dragon. Resistance to Thunder damage. Exhales a 15-foot cone of sonic energy.'] },
+      { name: 'Topaz (Necrotic)', source: 'FTD', raceName: 'Gem Dragonborn', entries: ['Ancestry of the Topaz dragon. Resistance to Necrotic damage. Exhales a 15-foot cone of necrotic energy.'] },
+    ],
+    entries: [
+      'Gem dragonborn are infused with psionic energy and the esoteric power of amethyst, crystal, emerald, sapphire, and topaz dragons.',
+      {
+        type: 'entries',
+        name: 'Psionic Mind',
+        entries: ['You can telepathically speak to any creature you can see within 30 feet of you in any language it understands.'],
+      },
+      {
+        type: 'entries',
+        name: 'Gem Flight',
+        entries: ['Starting at 5th level, you can use a bonus action to manifest spectral gem wings, gaining a flying speed equal to your walking speed and the ability to hover for 1 minute (once per long rest).'],
+      },
+    ],
+  },
+  // ==========================================
+  // MORDENKAINEN'S TOME OF FOES (MTF)
+  // ==========================================
+  {
+    name: 'Githyanki',
+    source: 'MTF',
+    page: 86,
+    size: ['M'],
+    speed: 30,
+    ability: [{ str: 2, int: 1 }],
+    languages: ['Common', 'Gith'],
+    traits: ['Astral Knowledge', 'Githyanki Psionics', 'Decadent Mastery'],
+    entries: [
+      'Hailing from the Astral Plane, the martial Githyanki wield silver greatswords and innate psionic talents honed over millennia of raiding.',
+      {
+        type: 'entries',
+        name: 'Githyanki Psionics',
+        entries: ['You know the {@spell mage hand} cantrip (invisible). At 3rd level, cast {@spell jump} once per long rest. At 5th level, cast {@spell misty step} once per long rest without spell slots.'],
+      },
+      {
+        type: 'entries',
+        name: 'Astral Knowledge',
+        entries: ['Whenever you finish a long rest, you can gain proficiency in one skill and with one weapon or tool of your choice until your next long rest.'],
+      },
+    ],
+  },
+  {
+    name: 'Githzerai',
+    source: 'MTF',
+    page: 88,
+    size: ['M'],
+    speed: 30,
+    ability: [{ wis: 2, int: 1 }],
+    languages: ['Common', 'Gith'],
+    traits: ['Mental Discipline', 'Githzerai Psionics'],
+    entries: [
+      'Dwelling in monasteries within the chaotic churning of Limbo, Githzerai hone extreme mental discipline and psionic defenses.',
+      {
+        type: 'entries',
+        name: 'Mental Discipline',
+        entries: ['You have advantage on saving throws against being charmed and frightened.'],
+      },
+      {
+        type: 'entries',
+        name: 'Githzerai Psionics',
+        entries: ['You know the {@spell mage hand} cantrip (invisible). At 3rd level, cast {@spell shield} once per long rest. At 5th level, cast {@spell detect thoughts} once per long rest without components.'],
+      },
+    ],
+  },
+  {
+    name: 'Eladrin',
+    source: 'MTF',
+    page: 61,
+    size: ['M'],
+    speed: 30,
+    darkvision: 60,
+    ability: [{ dex: 2, cha: 1 }],
+    languages: ['Common', 'Elvish'],
+    traits: ['Fey Step', 'Seasonal Trance', 'Fey Ancestry', 'Trance'],
+    entries: [
+      'Creatures of magic with ties to the Feywild, Eladrin shift between seasons reflecting their emotional state and unlocking distinctive teleportation magic.',
+      {
+        type: 'entries',
+        name: 'Fey Step',
+        entries: ['As a bonus action, you can magically teleport up to 30 feet to an unoccupied space you can see. At 3rd level, your Fey Step triggers an additional effect based on your current season (Autumn: charm 2 creatures; Winter: frighten a creature; Spring: teleport a willing ally instead; Summer: deal fire damage).'],
+      },
+    ],
+  },
+  {
+    name: 'Shadar-kai',
+    source: 'MTF',
+    page: 62,
+    size: ['M'],
+    speed: 30,
+    darkvision: 60,
+    ability: [{ dex: 2, con: 1 }],
+    languages: ['Common', 'Elvish'],
+    traits: ['Blessing of the Raven Queen', 'Necrotic Resistance', 'Keen Senses', 'Fey Ancestry'],
+    entries: [
+      'Sworn to the Raven Queen and steeped in the gloomy essence of the Shadowfell, Shadar-kai fade like ghosts across the battlefield.',
+      {
+        type: 'entries',
+        name: 'Blessing of the Raven Queen',
+        entries: ['As a bonus action, you can magically teleport up to 30 feet to an unoccupied space you can see. Starting at 3rd level, you also gain resistance to all damage until the start of your next turn (usable Proficiency Bonus times per long rest).'],
+      },
+      {
+        type: 'entries',
+        name: 'Necrotic Resistance',
+        entries: ['You have resistance to necrotic damage.'],
+      },
+    ],
+  },
+  // ==========================================
+  // VOLO'S GUIDE TO MONSTERS (VGM)
+  // ==========================================
+  {
+    name: 'Yuan-ti Pureblood',
+    source: 'VGM',
+    page: 120,
+    size: ['M'],
+    speed: 30,
+    darkvision: 60,
+    ability: [{ cha: 2, int: 1 }],
+    languages: ['Common', 'Abyssal', 'Draconic'],
+    traits: ['Magic Resistance', 'Poison Immunity', 'Innate Spellcasting'],
+    entries: [
+      'Human-like serpent folk bred to infiltrate civilizations, Yuan-ti Purebloods command venomous magic and formidable supernatural wards.',
+      {
+        type: 'entries',
+        name: 'Magic Resistance',
+        entries: ['You have advantage on saving throws against spells and other magical effects.'],
+      },
+      {
+        type: 'entries',
+        name: 'Poison Immunity',
+        entries: ['You are immune to poison damage and the poisoned condition.'],
+      },
+      {
+        type: 'entries',
+        name: 'Innate Spellcasting',
+        entries: ['You know the {@spell poison spray} cantrip and can cast {@spell animal friendship} an unlimited number of times with snakes.'],
+      },
+    ],
+  },
+  {
+    name: 'Firbolg',
+    source: 'VGM',
+    page: 106,
+    size: ['M'],
+    speed: 30,
+    ability: [{ wis: 2, str: 1 }],
+    languages: ['Common', 'Elvish', 'Giant'],
+    traits: ['Firbolg Magic', 'Hidden Step', 'Powerful Build', 'Speech of Beast and Leaf'],
+    entries: [
+      'Forest guardians who prefer quiet lives among primeval woodlands, Firbolg blend fey illusions with giant-kin strength.',
+      {
+        type: 'entries',
+        name: 'Hidden Step',
+        entries: ['As a bonus action, you can magically turn invisible until the start of your next turn or until you attack, make a damage roll, or force someone to make a saving throw.'],
+      },
+      {
+        type: 'entries',
+        name: 'Firbolg Magic',
+        entries: ['You can cast {@spell disguise self} and {@spell detect magic} once per short or long rest.'],
+      },
+      {
+        type: 'entries',
+        name: 'Speech of Beast and Leaf',
+        entries: ['You have the ability to communicate in a limited manner with beasts and plants, and you have advantage on all Charisma checks to influence them.'],
+      },
+    ],
+  },
+  {
+    name: 'Kenku',
+    source: 'VGM',
+    page: 109,
+    size: ['M'],
+    speed: 30,
+    ability: [{ dex: 2, wis: 1 }],
+    languages: ['Common', 'Auran'],
+    traits: ['Expert Forgery', 'Kenku Training', 'Mimicry'],
+    entries: [
+      'Cursed with flightlessness, Kenku are avian wanderers gifted with peerless vocal mimicry and forgery.',
+      {
+        type: 'entries',
+        name: 'Mimicry',
+        entries: ['You can mimic sounds you have heard, including voices. A creature that hears the sounds can tell they are imitations with a successful Insight check opposed by your Deception check.'],
+      },
+      {
+        type: 'entries',
+        name: 'Expert Forgery',
+        entries: ['You can duplicate other creatures’ handwriting and craftwork with advantage on checks to produce forgeries.'],
+      },
+    ],
+  },
+  {
+    name: 'Lizardfolk',
+    source: 'VGM',
+    page: 111,
+    size: ['M'],
+    speed: 30,
+    ability: [{ con: 2, wis: 1 }],
+    languages: ['Common', 'Draconic'],
+    traits: ['Bite', 'Cunning Artisan', 'Hold Breath', 'Natural Armor', 'Hungry Jaws'],
+    entries: [
+      'Pragmatic reptilian survivors of primeval swamps, Lizardfolk craft tools from defeated foes and deliver vicious bone-crushing bites.',
+      {
+        type: 'entries',
+        name: 'Bite',
+        entries: ['Your fanged maw is a natural weapon dealing {@damage 1d6} + STR piercing damage.'],
+      },
+      {
+        type: 'entries',
+        name: 'Hungry Jaws',
+        entries: ['As a bonus action, you can make a special bite attack. If it hits, you gain temporary hit points equal to your Constitution modifier (once per short or long rest).'],
+      },
+      {
+        type: 'entries',
+        name: 'Natural Armor',
+        entries: ['You have tough, scaly skin. When you aren’t wearing armor, your AC is 13 + your Dexterity modifier.'],
+      },
+    ],
+  },
+  {
+    name: 'Triton',
+    source: 'VGM',
+    page: 115,
+    size: ['M'],
+    speed: 30,
+    ability: [{ str: 1, con: 1, cha: 1 }],
+    languages: ['Common', 'Primordial'],
+    traits: ['Amphibious', 'Control Air and Water', 'Emissary of the Sea', 'Guardians of the Depths'],
+    entries: [
+      'Oceanic guardians from the elemental plane of water who patrol ocean depths and protect surface-dwellers from abyssal horrors.',
+      {
+        type: 'entries',
+        name: 'Amphibious',
+        entries: ['You can breathe air and water, and have a swimming speed of 30 feet.'],
+      },
+      {
+        type: 'entries',
+        name: 'Guardians of the Depths',
+        entries: ['Adapted to the freezing depths of ocean trenches, you have resistance to cold damage.'],
+      },
+      {
+        type: 'entries',
+        name: 'Control Air and Water',
+        entries: ['Cast {@spell fog cloud} at 1st level, {@spell gust of wind} at 3rd level, and {@spell wall of water} at 5th level once per long rest.'],
+      },
+    ],
+  },
 ];

@@ -144,6 +144,8 @@ export const BestiaryView: React.FC<BestiaryViewProps> = ({
           if (!m.isCustom) return false;
         } else if (selectedSource === 'MM') {
           if (!src.includes('monster manual') && !src.includes('(mm)')) return false;
+        } else if (selectedSource === 'TCE') {
+          if (!src.includes('tasha') && !src.includes('(tce)')) return false;
         } else if (selectedSource === 'VGM') {
           if (!src.includes("volo's") && !src.includes('(vgm)')) return false;
         } else if (selectedSource === 'MTF') {
@@ -390,9 +392,10 @@ export const BestiaryView: React.FC<BestiaryViewProps> = ({
               onChange={(e) => setSelectedSource(e.target.value)}
               className="px-2.5 py-1.5 text-xs rounded-xl bg-[#FAF8F5] border border-[#E5DFD5] text-stone-800 focus:outline-none"
             >
-              <option value="all">All Books & Sources (112 Sources)</option>
+              <option value="all">All Books & Sources (4,575 Monsters)</option>
               <option value="MM">Monster Manual (MM)</option>
               <option value="XMM">2024 Monster Manual (XMM)</option>
+              <option value="TCE">Tasha's Cauldron of Everything (TCE)</option>
               <option value="VGM">Volo's Guide to Monsters (VGM)</option>
               <option value="MTF">Mordenkainen's Tome of Foes (MTF)</option>
               <option value="MPMM">Monsters of the Multiverse (MPMM)</option>

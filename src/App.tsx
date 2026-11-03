@@ -24,6 +24,7 @@ import {
 import { DiceRollResult, rollDice } from './utils/diceRoller';
 import { generateFillablePdf, downloadPdf } from './utils/pdfExport';
 import { BestiaryView } from './components/bestiary/BestiaryView';
+import { fetchFull5eToolsMonsters } from './utils/monsterStorage';
 import { Dices, CheckCircle, Sparkles, BookOpen } from 'lucide-react';
 
 export default function App() {
@@ -42,6 +43,11 @@ export default function App() {
   const [recentRolls, setRecentRolls] = useState<DiceRollResult[]>([]);
   const [activeToast, setActiveToast] = useState<{ message: string; sub?: string } | null>(null);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+
+  // Pre-load all 4,575 5e.tools monsters in background on mount
+  useEffect(() => {
+    fetchFull5eToolsMonsters();
+  }, []);
 
   // Active Character resolution
   const activeCharacter =

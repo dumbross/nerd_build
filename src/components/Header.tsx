@@ -162,7 +162,7 @@ export const Header: React.FC<HeaderProps> = ({
           {focusMode === 'monster' && (
             <div className="px-3 py-1.5 rounded-lg text-xs font-medium text-stone-700 bg-white/70 shadow-2xs flex items-center gap-1.5">
               <Skull className="w-3.5 h-3.5 text-[#7A200D]" />
-              <span>Bestiary (4,569 Creatures)</span>
+              <span>Bestiary (4,575 Creatures)</span>
             </div>
           )}
 
