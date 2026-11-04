@@ -15,10 +15,11 @@ import {
   Users,
   Feather,
   Skull,
+  Library,
 } from 'lucide-react';
 import { Character } from '../types/character';
 
-export type FocusMode = 'character' | 'monster' | 'compendium';
+export type FocusMode = 'character' | 'monster' | 'compendium' | 'bookshelf';
 
 interface HeaderProps {
   activeTab: 'sheet' | 'builder' | 'compendium';
@@ -127,6 +128,24 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="hidden sm:inline">Compendium</span>
             <span className="sm:hidden">Compendium</span>
           </button>
+
+          <button
+            onClick={() => setFocusMode('bookshelf')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
+              focusMode === 'bookshelf'
+                ? 'bg-white text-stone-900 shadow-xs font-semibold'
+                : 'text-stone-600 hover:text-stone-900'
+            }`}
+            title="Switch UI to Bookshelf (Sourcebook PDFs & Google Drive Archive)"
+          >
+            <Library
+              className={`w-3.5 h-3.5 ${
+                focusMode === 'bookshelf' ? 'text-[#B85D36]' : 'text-stone-500'
+              }`}
+            />
+            <span className="hidden sm:inline">Bookshelf</span>
+            <span className="sm:hidden">Books</span>
+          </button>
         </div>
 
         {/* Sub-Navigation: Context-specific sub controls */}
@@ -173,6 +192,13 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           )}
 
+          {focusMode === 'bookshelf' && (
+            <div className="px-3 py-1.5 rounded-lg text-xs font-medium text-stone-700 bg-white/70 shadow-2xs flex items-center gap-1.5">
+              <Library className="w-3.5 h-3.5 text-[#B85D36]" />
+              <span>Sourcebook Archive (Drive)</span>
+            </div>
+          )}
+
           <button
             onClick={onOpenImportModal}
             className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-stone-600 hover:text-stone-900 transition-colors flex items-center gap-1.5 ml-1"
@@ -186,7 +212,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Right Actions */}
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
           {/* Active Character Quick Picker - accessible in character & compendium mode */}
-          {focusMode !== 'monster' && (
+          {focusMode !== 'monster' && focusMode !== 'bookshelf' && (
             <button
               onClick={onOpenCharacterModal}
               className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-[#E5DFD5] hover:border-stone-400 text-stone-800 text-xs shadow-sm"
@@ -281,6 +307,16 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <BookOpen className="w-3.5 h-3.5" />
           <span>Compendium</span>
+        </button>
+
+        <button
+          onClick={() => setFocusMode('bookshelf')}
+          className={`flex-1 py-1.5 text-xs text-center rounded-md font-medium transition-colors flex items-center justify-center gap-1 ${
+            focusMode === 'bookshelf' ? 'bg-white text-stone-900 shadow-sm font-semibold' : 'text-stone-600'
+          }`}
+        >
+          <Library className="w-3.5 h-3.5" />
+          <span>Books</span>
         </button>
       </div>
 

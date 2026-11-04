@@ -24,6 +24,7 @@ import {
 import { DiceRollResult, rollDice } from './utils/diceRoller';
 import { generateFillablePdf, downloadPdf } from './utils/pdfExport';
 import { BestiaryView } from './components/bestiary/BestiaryView';
+import { BookshelfView } from './components/bookshelf/BookshelfView';
 import { fetchFull5eToolsMonsters } from './utils/monsterStorage';
 import { Dices, CheckCircle, Sparkles, BookOpen } from 'lucide-react';
 
@@ -201,6 +202,18 @@ export default function App() {
             }}
             onSwitchToBestiary={() => setFocusMode('monster')}
             initialCategory={compendiumCategory}
+          />
+        )}
+
+        {focusMode === 'bookshelf' && (
+          <BookshelfView
+            onOpenCompendiumWithSource={(sourceCode) => {
+              setFocusMode('compendium');
+              setCompendiumCategory('all');
+            }}
+            onOpenBestiaryWithSource={(sourceCode) => {
+              setFocusMode('monster');
+            }}
           />
         )}
 
